@@ -382,19 +382,19 @@ tests:
 
 ```bash
 # 新しいサービスを定義
-tsubo new user-service
+potter new user-service
 
 # サービス定義から実装を生成（AI駆動）
-tsubo build user-service
+potter build user-service
 
 # 全サービスを並列ビルド
-tsubo build --all --parallel
+potter build --all --parallel
 
 # 検証の実行
-tsubo verify
+potter verify
 
 # サービスの起動
-tsubo run
+potter run
 ```
 
 ## 目指すもの
@@ -405,7 +405,7 @@ tsubo run
 - [ ] 基本的なオーケストレーター（Go実装）
 - [ ] AI プロンプト生成エンジン
 - [ ] Go サービステンプレート
-- [ ] CLI ツール（`tsubo new`, `tsubo build`, `tsubo verify`）
+- [ ] CLI ツール（`potter new`, `potter build`, `potter verify`）
 - [ ] デモアプリケーション（3-5のマイクロサービス）
 
 ### 中期目標

@@ -382,19 +382,19 @@ Command-line tool for developers to operate Tsubo.
 
 ```bash
 # Define a new service
-tsubo new user-service
+potter new user-service
 
 # Generate implementation from service definition (AI-driven)
-tsubo build user-service
+potter build user-service
 
 # Build all services in parallel
-tsubo build --all --parallel
+potter build --all --parallel
 
 # Run verification
-tsubo verify
+potter verify
 
 # Start services
-tsubo run
+potter run
 ```
 
 ## Goals
@@ -405,7 +405,7 @@ tsubo run
 - [x] Basic orchestrator (Go implementation)
 - [x] AI prompt generation engine
 - [x] Go service templates
-- [x] CLI tool (`tsubo new`, `tsubo build`, `tsubo verify`)
+- [x] CLI tool (`potter new`, `potter build`, `potter verify`)
 - [x] Demo application (2 microservices)
 
 ### Mid-term Goals

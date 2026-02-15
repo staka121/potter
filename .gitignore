@@ -1,6 +1,6 @@
 # Binaries (executable files only, not directories)
-/tsubo
-/cmd/tsubo/tsubo
+/potter
+/cmd/potter/potter
 
 # Go build artifacts
 *.exe

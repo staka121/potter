@@ -374,7 +374,7 @@ api:
 Tsubo automatically validates domain design:
 
 ```bash
-tsubo build app.tsubo.yaml
+potter build app.tsubo.yaml
 
 # Checks:
 # - Circular dependencies (error)

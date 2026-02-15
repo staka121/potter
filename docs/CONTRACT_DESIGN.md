@@ -318,7 +318,7 @@ Contracts are automatically validated by `tsubo-plan`:
 
 ```bash
 # Validate contract
-tsubo build app.tsubo.yaml
+potter build app.tsubo.yaml
 
 # Contract validation checks:
 # - YAML syntax

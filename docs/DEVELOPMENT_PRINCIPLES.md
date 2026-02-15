@@ -216,10 +216,10 @@ Contracts serve as:
 
 ```bash
 # Automatic Contract compliance check
-tsubo verify
+potter verify
 
 # Check specific service
-tsubo verify --service user-service
+potter verify --service user-service
 ```
 
 ### Test-Driven by Contract

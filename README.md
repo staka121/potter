@@ -82,16 +82,16 @@ Tsubo は、これらの課題を「**壺＝コンテキストの境界**」と�
 git clone https://github.com/staka121/tsubo.git
 cd tsubo
 
-# Tsubo CLI をビルド
-go build -o tsubo ./cmd/tsubo
+# Potter CLI をビルド
+go build -o potter ./cmd/tsubo
 
 # またはインストール
-go install ./cmd/tsubo
+go install ./cmd/potter
 ```
 
 ### API キー設定（AI 自動実装を使う場合）
 
-Tsubo の AI 駆動実装機能（`tsubo build --ai`）を使用するには、Claude API キーが必要です。
+Tsubo の AI 駆動実装機能（`potter build --ai`）を使用するには、Claude API キーが必要です。
 
 #### 1. API キーの取得
 
@@ -123,7 +123,7 @@ echo "ANTHROPIC_API_KEY=sk-ant-xxxxx" > .env
 
 # .env ファイルを読み込んで実行
 source .env
-tsubo build app.tsubo.yaml --ai
+potter build app.tsubo.yaml --ai
 ```
 
 #### 3. 動作確認
@@ -133,7 +133,7 @@ tsubo build app.tsubo.yaml --ai
 echo $ANTHROPIC_API_KEY
 
 # AI 実装をテスト実行
-tsubo build ./poc/contracts/tsubo-todo-app.tsubo.yaml --ai
+potter build ./poc/contracts/tsubo-todo-app.tsubo.yaml --ai
 ```
 
 #### セキュリティに関する注意事項
@@ -158,28 +158,28 @@ Claude API は従量課金制です。詳細は [Anthropic Pricing](https://www.
 
 ```bash
 # 1. 新しいサービステンプレートを作成
-tsubo new user-service
+potter new user-service
 
 # 2. .tsubo.yaml ファイルを作成・編集してサービスを追加
 # （例: poc/contracts/tsubo-todo-app.tsubo.yaml を参照）
 
 # 3. プロンプト生成のみ（手動実行用）
-tsubo build ./poc/contracts/tsubo-todo-app.tsubo.yaml
+potter build ./poc/contracts/tsubo-todo-app.tsubo.yaml
 
 # または
 
 # 4. AI駆動で自動実装（Claude API使用）
 export ANTHROPIC_API_KEY=your-api-key
-tsubo build ./poc/contracts/tsubo-todo-app.tsubo.yaml --ai
+potter build ./poc/contracts/tsubo-todo-app.tsubo.yaml --ai
 
 # 並行数を制限する場合
-tsubo build ./poc/contracts/tsubo-todo-app.tsubo.yaml --ai --concurrency 4
+potter build ./poc/contracts/tsubo-todo-app.tsubo.yaml --ai --concurrency 4
 
 # 5. 実装完了後、サービスを起動
-tsubo run -d
+potter run -d
 
 # 6. テスト実行
-tsubo verify
+potter verify
 ```
 
 ### PoC の実行（Tsubo TODO アプリケーション）
@@ -189,17 +189,17 @@ tsubo verify
 git clone https://github.com/staka121/tsubo.git
 cd tsubo
 
-# Tsubo CLI をビルド
-go build -o tsubo ./cmd/tsubo
+# Potter CLI をビルド
+go build -o potter ./cmd/tsubo
 
 # 実装プランを確認
-tsubo build ./poc/contracts/tsubo-todo-app.tsubo.yaml
+potter build ./poc/contracts/tsubo-todo-app.tsubo.yaml
 
 # 実装済みサービスを起動
-tsubo run -d
+potter run -d
 
 # 統合テスト
-tsubo verify
+potter verify
 ```
 
 **含まれるドメイン（固体オブジェクト）:**
@@ -218,7 +218,7 @@ tsubo verify
              │
              ▼
 ┌─────────────────────────────────────────┐
-│          tsubo CLI (Go)                 │
+│          potter CLI (Go)                 │
 │  - Contract 解析                         │
 │  - 依存関係分析                          │
 │  - Wave 生成（実装順序決定）             │
@@ -301,10 +301,10 @@ tsubo verify
   - [x] 統合テスト（ドメイン間連携の確認）
 - [x] **統一 CLI 完成**
   - [x] **tsubo** (Go) - オールインワンコマンドラインツール
-    - [x] `tsubo new` - サービステンプレート生成
-    - [x] `tsubo build` - Contract 解析・AI 実装・プロンプト生成
-    - [x] `tsubo verify` - Contract 検証・テスト実行
-    - [x] `tsubo run` - サービス起動（Docker Compose）
+    - [x] `potter new` - サービステンプレート生成
+    - [x] `potter build` - Contract 解析・AI 実装・プロンプト生成
+    - [x] `potter verify` - Contract 検証・テスト実行
+    - [x] `potter run` - サービス起動（Docker Compose）
     - [x] 依存関係の自動解析（トポロジカルソート）
     - [x] Wave（実装順序）の自動決定（複数 Wave 対応）
     - [x] Claude API クライアント実装
@@ -318,18 +318,18 @@ tsubo verify
 ```
 Contract 定義 (人間)
    ↓
-tsubo build --ai (自動解析 + AI実装) ← 完全自動化！
+potter build --ai (自動解析 + AI実装) ← 完全自動化！
    ↓
 マイクロサービス実装 (100% Contract準拠)
    ↓
-tsubo verify (検証)
+potter verify (検証)
    ↓
-tsubo run (起動)
+potter run (起動)
 ```
 
 ### 次のマイルストーン
 
-- [ ] tsubo CLI の機能拡張
+- [ ] potter CLI の機能拡張
   - [x] より複雑な依存関係グラフのサポート（トポロジカルソート実装）
   - [ ] 実装プランの可視化
   - [x] サイクル検出（循環依存の検出）
@@ -361,10 +361,10 @@ tsubo run (起動)
 
 ### CLI コマンド
 - **tsubo** - 統一コマンドラインインターフェース
-  - `tsubo new` - サービステンプレート生成
-  - `tsubo build` - Contract 解析・AI 実装
-  - `tsubo verify` - Contract 検証・テスト実行
-  - `tsubo run` - サービス起動
+  - `potter new` - サービステンプレート生成
+  - `potter build` - Contract 解析・AI 実装
+  - `potter verify` - Contract 検証・テスト実行
+  - `potter run` - サービス起動
 
 ## コントリビューション
 
@@ -425,11 +425,11 @@ Tsubo は以下の原則に基づいて開発されます：
 **Latest Achievement:** 統一 CLI 実装完了（`tsubo` コマンドですべての操作が可能）
 
 **実装済み:**
-- ✅ **tsubo CLI** - 統一コマンドラインインターフェース
-  - `tsubo new` - サービステンプレート生成
-  - `tsubo build` - Contract 解析・AI 実装
-  - `tsubo verify` - Contract 検証・テスト実行
-  - `tsubo run` - サービス起動
+- ✅ **potter CLI** - 統一コマンドラインインターフェース
+  - `potter new` - サービステンプレート生成
+  - `potter build` - Contract 解析・AI 実装
+  - `potter verify` - Contract 検証・テスト実行
+  - `potter run` - サービス起動
   - 並行数制御（`--concurrency`）
   - トポロジカルソートによる複数 Wave 対応
   - Claude API 統合
