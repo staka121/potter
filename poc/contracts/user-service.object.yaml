@@ -1,0 +1,258 @@
+# Tsubo Object: User Service
+# これは「固体オブジェクト（ドメイン）」の設計図です
+
+version: "1.0"
+
+# このオブジェクトが属する壺
+belongs_to: tsubo-todo-app
+
+# ========================================
+# 固体オブジェクト（ドメイン）の定義
+# ========================================
+service:
+  name: user-service
+  description: ユーザー管理サービス（簡易認証機能付き）
+
+  # ビジネスコンテキスト
+  context:
+    purpose: |
+      User ドメインを扱います。
+      ユーザーの作成、取得、簡易的な認証を提供します。
+
+      【重要】このサービスは User ドメインのみを扱い、
+      TODO ドメインとは独立しています。
+
+    domain: user-management
+
+    domain_boundary: |
+      このドメインに含まれるもの:
+      - ユーザーの CRUD 操作
+      - 簡易認証（ユーザーID検証）
+      - ユーザー情報の管理
+
+      このドメインに含まれないもの:
+      - TODO 管理（TODO ドメインの責務）
+      - 複雑な認証・認可（将来の Auth ドメインの責務）
+      - 通知機能（将来の Notification ドメインの責務）
+
+    responsibilities:
+      - ユーザーの作成
+      - ユーザー情報の取得
+      - ユーザーの一覧取得
+      - ユーザーIDの検証（簡易認証）
+
+    constraints:
+      - メールアドレスは必須で、一意である必要がある
+      - 名前は必須
+      - IDはUUIDv4形式
+      - メールアドレスは小文字に正規化
+
+# ========================================
+# API定義
+# ========================================
+api:
+  version: "1.0.0"
+  base_path: /api/v1
+
+  endpoints:
+    # ========================================
+    # ユーザーの作成
+    # ========================================
+    - id: create_user
+      method: POST
+      path: /users
+
+      request:
+        content_type: application/json
+        schema:
+          type: object
+          required: [name, email]
+          properties:
+            name:
+              type: string
+              minLength: 1
+              maxLength: 100
+            email:
+              type: string
+              format: email
+              maxLength: 255
+
+      response:
+        201:
+          description: ユーザーが作成された
+          schema: {$ref: "#/types/User"}
+        400:
+          schema: {$ref: "#/types/Error"}
+        409:
+          description: メールアドレスが既に存在
+          schema: {$ref: "#/types/Error"}
+
+      semantics:
+        intent: |
+          新しいユーザーをシステムに登録します。
+
+        behavior:
+          success: |
+            - メールアドレスを小文字に正規化
+            - メールアドレスの一意性をチェック
+            - UUIDv4でIDを生成
+            - データベースに保存
+            - 作成されたユーザーオブジェクトを返す
+
+          edge_cases:
+            - case: メールアドレスが既に存在
+              response: 409 Conflict
+              body: {error: "email already exists"}
+
+            - case: 名前が空
+              response: 400 Bad Request
+              body: {error: "name is required"}
+
+            - case: メールアドレスの形式が不正
+              response: 400 Bad Request
+              body: {error: "invalid email format"}
+
+    # ========================================
+    # ユーザーの取得
+    # ========================================
+    - id: get_user
+      method: GET
+      path: /users/{id}
+
+      request:
+        path_params:
+          id:
+            type: string
+            format: uuid
+
+      response:
+        200:
+          schema: {$ref: "#/types/User"}
+        404:
+          schema: {$ref: "#/types/Error"}
+
+      semantics:
+        intent: ユーザー情報を取得します
+
+        behavior:
+          edge_cases:
+            - case: ユーザーが存在しない
+              response: 404 Not Found
+              body: {error: "user not found"}
+
+    # ========================================
+    # ユーザー一覧の取得
+    # ========================================
+    - id: list_users
+      method: GET
+      path: /users
+
+      response:
+        200:
+          schema:
+            type: object
+            properties:
+              users:
+                type: array
+                items: {$ref: "#/types/User"}
+
+      semantics:
+        intent: すべてのユーザーを取得します
+
+    # ========================================
+    # ユーザーIDの検証（簡易認証）
+    # ========================================
+    - id: validate_user
+      method: POST
+      path: /users/validate
+
+      request:
+        content_type: application/json
+        schema:
+          type: object
+          required: [user_id]
+          properties:
+            user_id:
+              type: string
+              format: uuid
+
+      response:
+        200:
+          description: ユーザーが存在する
+          schema:
+            type: object
+            properties:
+              valid:
+                type: boolean
+                example: true
+              user:
+                $ref: "#/types/User"
+        404:
+          description: ユーザーが存在しない
+          schema:
+            type: object
+            properties:
+              valid:
+                type: boolean
+                example: false
+
+      semantics:
+        intent: |
+          ユーザーIDが有効かどうかを検証します。
+          他のサービス（TODO サービスなど）が使用します。
+
+# ========================================
+# 型定義
+# ========================================
+types:
+  User:
+    description: ユーザーを表現します
+    properties:
+      id:
+        type: string
+        format: uuid
+        description: ユーザーの一意識別子
+        immutable: true
+      name:
+        type: string
+        description: ユーザーの名前
+      email:
+        type: string
+        format: email
+        description: ユーザーのメールアドレス（小文字正規化済み）
+        unique: true
+      created_at:
+        type: string
+        format: date-time
+        description: ユーザー作成日時
+        immutable: true
+
+  Error:
+    description: エラーレスポンス
+    properties:
+      error:
+        type: string
+        description: エラーメッセージ
+
+# ========================================
+# 依存関係
+# ========================================
+dependencies:
+  services: []
+
+  databases:
+    - name: user-db
+      type: in-memory
+      tables: [users]
+
+# ========================================
+# パフォーマンス要件
+# ========================================
+performance:
+  latency:
+    p50: 50ms
+    p95: 100ms
+    p99: 200ms
+
+  throughput:
+    target: 1000 req/sec

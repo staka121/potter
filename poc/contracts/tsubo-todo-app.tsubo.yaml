@@ -1,0 +1,95 @@
+# Tsubo Definition: TODO Application
+# これは「壺」の設計図です - アプリケーション全体を定義します
+
+version: "1.0"
+
+# ========================================
+# 壺（アプリケーション全体）の定義
+# ========================================
+tsubo:
+  name: tsubo-todo-app
+  description: TODO 管理アプリケーション（Tsubo PoC）
+
+  # この壺の目的
+  purpose: |
+    シンプルな TODO 管理アプリケーションです。
+    ユーザーは自分の TODO を作成・管理できます。
+
+    このアプリケーションは Tsubo の哲学を実証するための PoC です：
+    - 壺（アプリケーション全体）
+    - 固体オブジェクト（ドメイン/マイクロサービス）
+    - Contract による定義
+    - Docker による環境の隔離
+
+# ========================================
+# 壺の中身：固体オブジェクト（ドメイン）のリスト
+# ========================================
+objects:
+  # 固体オブジェクト1: User ドメイン
+  - name: user-service
+    description: ユーザー管理ドメイン
+    contract: ./user-service.object.yaml
+
+    runtime:
+      type: docker
+      port: 8084
+      health_check: /api/v1/users
+
+    dependencies: []
+
+  # 固体オブジェクト2: TODO ドメイン
+  - name: todo-service
+    description: TODO 管理ドメイン
+    contract: ./todo-service.object.yaml
+
+    runtime:
+      type: docker
+      port: 8083
+      health_check: /api/v1/todos
+
+    dependencies:
+      - user-service
+
+# ========================================
+# 壺全体の構成
+# ========================================
+deployment:
+  orchestration: docker-compose
+  network:
+    name: tsubo-network
+    driver: bridge
+
+  # 起動順序（依存関係に基づく）
+  startup_order:
+    - user-service  # 依存なし、最初に起動
+    - todo-service  # user-service に依存
+
+# ========================================
+# 壺全体のテスト
+# ========================================
+integration_tests:
+  - name: user_creation
+    description: ユーザーを作成できる
+
+  - name: todo_creation_with_user
+    description: ユーザーに紐づいた TODO を作成できる
+
+  - name: domain_isolation
+    description: ユーザーは自分の TODO のみ閲覧できる
+
+  - name: domain_communication
+    description: TODO サービスが User サービスと通信できる
+
+# ========================================
+# メタデータ
+# ========================================
+metadata:
+  version: "0.2.0"
+  created: "2026-02-15"
+  philosophy: |
+    この壺は Tsubo の哲学を体現しています：
+    - 1つの壺（アプリケーション全体）
+    - 複数の固体オブジェクト（ドメイン/マイクロサービス）
+    - 各オブジェクトは独立している
+    - Contract で形状が定義される
+    - AI が内部構造を作る

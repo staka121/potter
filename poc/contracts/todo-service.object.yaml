@@ -1,0 +1,531 @@
+# Tsubo Object: Todo Service
+# これは「固体オブジェクト（ドメイン）」の設計図です
+
+version: "1.0"
+
+# このオブジェクトが属する壺
+belongs_to: tsubo-todo-app
+
+# ========================================
+# 壺の形：サービスのコンテキスト
+# ========================================
+service:
+  name: todo-service
+  description: シンプルなTODO管理サービス
+
+  # ビジネスコンテキスト（AI向けの明確な指示）
+  context:
+    purpose: |
+      このサービスは、ユーザーのTODOアイテムを管理します。
+      TODOの作成、取得、更新、削除（CRUD）を提供し、
+      シンプルで信頼性の高いタスク管理を実現します。
+
+    domain: task-management
+
+    responsibilities:
+      - TODOアイテムの作成
+      - TODOアイテムの一覧取得
+      - TODOアイテムの詳細取得
+      - TODOアイテムのステータス更新
+      - TODOアイテムの削除
+      - 完了済みTODOのフィルタリング
+
+    constraints:
+      - TODOのタイトルは必須で、空文字列は許可しない
+      - TODOのタイトルは最大200文字
+      - 削除されたTODOは物理削除（論理削除ではない）
+      - IDはUUIDv4形式
+      - タイムスタンプはRFC3339形式
+
+# ========================================
+# 壺を覗いた時に見えるもの：API定義
+# ========================================
+api:
+  version: "1.0.0"
+  base_path: /api/v1
+
+  endpoints:
+    # ========================================
+    # エンドポイント1: TODOの作成
+    # ========================================
+    - id: create_todo
+      method: POST
+      path: /todos
+
+      request:
+        content_type: application/json
+        schema:
+          type: object
+          required: [title]
+          properties:
+            title:
+              type: string
+              minLength: 1
+              maxLength: 200
+              description: TODOのタイトル
+            description:
+              type: string
+              maxLength: 2000
+              description: TODOの詳細説明（オプション）
+
+      response:
+        201:
+          description: TODOが正常に作成された
+          schema: {$ref: "#/types/Todo"}
+        400:
+          description: リクエストが不正
+          schema: {$ref: "#/types/Error"}
+
+      # セマンティック情報（AIへの指示）
+      semantics:
+        intent: |
+          新しいTODOアイテムをシステムに追加します。
+          タイトルは必須で、説明はオプションです。
+          作成時のステータスは自動的に "pending" になります。
+
+        behavior:
+          success: |
+            - タイトルの前後の空白をトリミング
+            - トリミング後のタイトルが空の場合はエラー
+            - UUIDv4でIDを生成
+            - ステータスを "pending" に設定
+            - created_at を現在時刻に設定
+            - データベースに保存
+            - 作成されたTODOオブジェクトを返す
+
+          edge_cases:
+            - case: タイトルが空文字列または空白のみ
+              response: 400 Bad Request
+              body: {error: "title cannot be empty"}
+              reason: タイトルは必須項目
+
+            - case: タイトルが200文字を超える
+              response: 400 Bad Request
+              body: {error: "title too long (max 200 characters)"}
+              reason: データベースの制約
+
+            - case: 説明が2000文字を超える
+              response: 400 Bad Request
+              body: {error: "description too long (max 2000 characters)"}
+              reason: データベースの制約
+
+        examples:
+          - name: 正常なTODO作成（説明あり）
+            request:
+              title: "買い物に行く"
+              description: "牛乳、パン、卵を買う"
+            response:
+              status: 201
+              body:
+                id: "550e8400-e29b-41d4-a716-446655440000"
+                title: "買い物に行く"
+                description: "牛乳、パン、卵を買う"
+                status: "pending"
+                created_at: "2026-02-15T10:00:00Z"
+
+          - name: 正常なTODO作成（説明なし）
+            request:
+              title: "レポートを書く"
+            response:
+              status: 201
+              body:
+                id: "550e8400-e29b-41d4-a716-446655440001"
+                title: "レポートを書く"
+                description: null
+                status: "pending"
+                created: "2026-02-15T10:01:00Z"
+
+          - name: エラー：空のタイトル
+            request:
+              title: "   "
+            response:
+              status: 400
+              body:
+                error: "title cannot be empty"
+
+    # ========================================
+    # エンドポイント2: TODO一覧の取得
+    # ========================================
+    - id: list_todos
+      method: GET
+      path: /todos
+
+      request:
+        query_params:
+          status:
+            type: string
+            enum: [pending, completed]
+            required: false
+            description: ステータスでフィルタリング
+
+      response:
+        200:
+          description: TODO一覧
+          schema:
+            type: object
+            properties:
+              todos:
+                type: array
+                items: {$ref: "#/types/Todo"}
+
+      semantics:
+        intent: |
+          すべてのTODOアイテムを取得します。
+          オプションでステータスによるフィルタリングが可能です。
+
+        behavior:
+          success: |
+            - ステータスパラメータがない場合、すべてのTODOを返す
+            - ステータスパラメータがある場合、該当するTODOのみを返す
+            - 作成日時の新しい順にソート
+            - 空の配列も有効なレスポンス
+
+          edge_cases:
+            - case: 不正なステータス値
+              response: 400 Bad Request
+              body: {error: "invalid status value"}
+              reason: status は "pending" または "completed" のみ
+
+            - case: TODOが1件もない
+              response: 200 OK
+              body: {todos: []}
+              reason: 空の配列は有効なレスポンス
+
+        examples:
+          - name: すべてのTODO取得
+            request:
+              query: {}
+            response:
+              status: 200
+              body:
+                todos:
+                  - id: "550e8400-e29b-41d4-a716-446655440000"
+                    title: "買い物に行く"
+                    status: "pending"
+                    created_at: "2026-02-15T10:00:00Z"
+                  - id: "550e8400-e29b-41d4-a716-446655440001"
+                    title: "レポートを書く"
+                    status: "completed"
+                    created_at: "2026-02-15T09:00:00Z"
+
+          - name: 未完了のTODOのみ取得
+            request:
+              query: {status: "pending"}
+            response:
+              status: 200
+              body:
+                todos:
+                  - id: "550e8400-e29b-41d4-a716-446655440000"
+                    title: "買い物に行く"
+                    status: "pending"
+                    created_at: "2026-02-15T10:00:00Z"
+
+    # ========================================
+    # エンドポイント3: TODOの詳細取得
+    # ========================================
+    - id: get_todo
+      method: GET
+      path: /todos/{id}
+
+      request:
+        path_params:
+          id:
+            type: string
+            format: uuid
+            description: TODO ID
+
+      response:
+        200:
+          description: TODO詳細
+          schema: {$ref: "#/types/Todo"}
+        404:
+          description: TODOが見つからない
+          schema: {$ref: "#/types/Error"}
+
+      semantics:
+        intent: |
+          指定されたIDのTODOアイテムを取得します。
+
+        behavior:
+          success: |
+            - IDでTODOを検索
+            - 見つかった場合、TODOオブジェクトを返す
+
+          edge_cases:
+            - case: 指定されたIDのTODOが存在しない
+              response: 404 Not Found
+              body: {error: "todo not found"}
+              reason: 存在しないリソース
+
+            - case: IDの形式が不正（UUIDでない）
+              response: 400 Bad Request
+              body: {error: "invalid id format"}
+              reason: IDはUUID形式である必要がある
+
+        examples:
+          - name: 正常なTODO取得
+            request:
+              path: {id: "550e8400-e29b-41d4-a716-446655440000"}
+            response:
+              status: 200
+              body:
+                id: "550e8400-e29b-41d4-a716-446655440000"
+                title: "買い物に行く"
+                description: "牛乳、パン、卵を買う"
+                status: "pending"
+                created_at: "2026-02-15T10:00:00Z"
+
+          - name: TODOが見つからない
+            request:
+              path: {id: "00000000-0000-0000-0000-000000000000"}
+            response:
+              status: 404
+              body:
+                error: "todo not found"
+
+    # ========================================
+    # エンドポイント4: TODOのステータス更新
+    # ========================================
+    - id: update_todo_status
+      method: PATCH
+      path: /todos/{id}
+
+      request:
+        path_params:
+          id:
+            type: string
+            format: uuid
+        content_type: application/json
+        schema:
+          type: object
+          required: [status]
+          properties:
+            status:
+              type: string
+              enum: [pending, completed]
+
+      response:
+        200:
+          description: ステータスが更新された
+          schema: {$ref: "#/types/Todo"}
+        404:
+          description: TODOが見つからない
+          schema: {$ref: "#/types/Error"}
+        400:
+          description: リクエストが不正
+          schema: {$ref: "#/types/Error"}
+
+      semantics:
+        intent: |
+          TODOアイテムのステータスを更新します。
+          pending ⇔ completed の切り替えが可能です。
+
+        behavior:
+          success: |
+            - IDでTODOを検索
+            - 見つかった場合、ステータスを更新
+            - 更新されたTODOオブジェクトを返す
+
+          edge_cases:
+            - case: 指定されたIDのTODOが存在しない
+              response: 404 Not Found
+              body: {error: "todo not found"}
+
+            - case: 不正なステータス値
+              response: 400 Bad Request
+              body: {error: "invalid status value"}
+              reason: status は "pending" または "completed" のみ
+
+        examples:
+          - name: ステータスをcompletedに変更
+            request:
+              path: {id: "550e8400-e29b-41d4-a716-446655440000"}
+              body: {status: "completed"}
+            response:
+              status: 200
+              body:
+                id: "550e8400-e29b-41d4-a716-446655440000"
+                title: "買い物に行く"
+                status: "completed"
+                created_at: "2026-02-15T10:00:00Z"
+
+    # ========================================
+    # エンドポイント5: TODOの削除
+    # ========================================
+    - id: delete_todo
+      method: DELETE
+      path: /todos/{id}
+
+      request:
+        path_params:
+          id:
+            type: string
+            format: uuid
+
+      response:
+        204:
+          description: TODOが削除された
+        404:
+          description: TODOが見つからない
+          schema: {$ref: "#/types/Error"}
+
+      semantics:
+        intent: |
+          指定されたIDのTODOアイテムを削除します。
+          物理削除を行います（論理削除ではありません）。
+
+        behavior:
+          success: |
+            - IDでTODOを検索
+            - 見つかった場合、データベースから削除
+            - 204 No Content を返す（ボディなし）
+
+          edge_cases:
+            - case: 指定されたIDのTODOが存在しない
+              response: 404 Not Found
+              body: {error: "todo not found"}
+              reason: 存在しないリソースは削除できない
+
+        examples:
+          - name: 正常な削除
+            request:
+              path: {id: "550e8400-e29b-41d4-a716-446655440000"}
+            response:
+              status: 204
+
+          - name: TODOが見つからない
+            request:
+              path: {id: "00000000-0000-0000-0000-000000000000"}
+            response:
+              status: 404
+              body:
+                error: "todo not found"
+
+# ========================================
+# 壺の中身：型定義
+# ========================================
+types:
+  Todo:
+    description: TODOアイテムを表現します
+    properties:
+      id:
+        type: string
+        format: uuid
+        description: TODOの一意識別子
+        immutable: true
+        example: "550e8400-e29b-41d4-a716-446655440000"
+      title:
+        type: string
+        minLength: 1
+        maxLength: 200
+        description: TODOのタイトル
+        example: "買い物に行く"
+      description:
+        type: string
+        maxLength: 2000
+        nullable: true
+        description: TODOの詳細説明（オプション）
+        example: "牛乳、パン、卵を買う"
+      status:
+        type: string
+        enum: [pending, completed]
+        description: TODOのステータス
+        example: "pending"
+      created_at:
+        type: string
+        format: date-time
+        description: TODO作成日時（RFC3339形式）
+        immutable: true
+        example: "2026-02-15T10:00:00Z"
+
+  Error:
+    description: エラーレスポンス
+    properties:
+      error:
+        type: string
+        description: エラーメッセージ
+        example: "title cannot be empty"
+
+# ========================================
+# 依存関係（このPoCでは依存なし）
+# ========================================
+dependencies:
+  services:
+    - name: user-service
+      reason: TODO の所有者（User）を検証するため
+      endpoints: ["/users/validate"]
+      type: required
+
+  databases:
+    - name: todo-db
+      type: in-memory  # PoCでは簡単のためインメモリ
+      tables: [todos]
+
+# ========================================
+# 契約テスト
+# ========================================
+tests:
+  contract:
+    - name: TODOの作成と取得
+      scenario: |
+        1. 新しいTODOを作成
+        2. 作成されたTODOのIDで取得
+        3. タイトルとステータスが一致することを確認
+      steps:
+        - action: POST /todos
+          body: {title: "テストTODO"}
+          expect:
+            status: 201
+            body_contains: {title: "テストTODO", status: "pending"}
+        - action: GET /todos/{id}
+          expect:
+            status: 200
+            body_contains: {title: "テストTODO"}
+
+    - name: ステータスの更新
+      scenario: |
+        1. TODOを作成（status: pending）
+        2. ステータスをcompletedに更新
+        3. 更新されたことを確認
+      steps:
+        - action: POST /todos
+          body: {title: "完了予定のTODO"}
+          expect: {status: 201}
+        - action: PATCH /todos/{id}
+          body: {status: "completed"}
+          expect:
+            status: 200
+            body_contains: {status: "completed"}
+
+    - name: エッジケース：空のタイトル
+      scenario: 空のタイトルでTODOを作成しようとするとエラー
+      steps:
+        - action: POST /todos
+          body: {title: "   "}
+          expect:
+            status: 400
+            body_contains: {error: "title cannot be empty"}
+
+    - name: エッジケース：存在しないTODOの取得
+      scenario: 存在しないIDでTODOを取得しようとすると404
+      steps:
+        - action: GET /todos/00000000-0000-0000-0000-000000000000
+          expect:
+            status: 404
+            body_contains: {error: "todo not found"}
+
+# ========================================
+# パフォーマンス要件
+# ========================================
+performance:
+  latency:
+    p50: 50ms
+    p95: 100ms
+    p99: 200ms
+
+  throughput:
+    target: 500 req/sec
+
+  notes: |
+    PoCでは簡単のためインメモリストレージを使用。
+    本番環境では PostgreSQL などの永続化が必要。
