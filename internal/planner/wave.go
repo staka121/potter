@@ -3,8 +3,8 @@ package planner
 import (
 	"fmt"
 
-	"github.com/staka121/tsubo/internal/analyzer"
-	"github.com/staka121/tsubo/pkg/types"
+	"github.com/staka121/potter/internal/analyzer"
+	"github.com/staka121/potter/pkg/types"
 )
 
 // GenerateWaves creates implementation waves based on dependencies using topological sort

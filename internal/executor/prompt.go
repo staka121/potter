@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/staka121/tsubo/pkg/types"
+	"github.com/staka121/potter/pkg/types"
 )
 
 // PromptGenerator generates implementation prompts for AI agents

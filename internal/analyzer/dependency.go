@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/staka121/tsubo/internal/parser"
-	"github.com/staka121/tsubo/pkg/types"
+	"github.com/staka121/potter/internal/parser"
+	"github.com/staka121/potter/pkg/types"
 )
 
 // ObjectWithDeps represents an object with its dependencies

@@ -1,13 +1,17 @@
-# Tsubo（壺）
+# Potter Framework
 
 > AI駆動開発のためのマイクロサービスフレームワーク
+>
+> **Potter（職人）は壺（Tsubo）を作る - AIが壺の中の各固体オブジェクトを実装する**
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/status-proof%20of%20concept-green.svg)]()
 
 ## 概要
 
-**Tsubo（壺）** は、AI（LLM）による並列実装を加速させ、ハルシネーションを削減するために設計された、マイクロサービス開発フレームワークです。
+**Potter** は、AI（LLM）による並列実装を加速させ、ハルシネーションを削減するために設計された、マイクロサービス開発フレームワークです。
+
+Potter（職人）は壺（Tsubo）を作り、AIがその壺の中の各固体オブジェクト（ドメイン）を実装します。
 
 ### 壺のメタファー
 
@@ -34,18 +38,19 @@
 - **マイクロサービス**: 各固体オブジェクトの実装
 - **実装の詳細**: オブジェクトの内部構造（AIが決める）
 
-### なぜ Tsubo なのか？
+### なぜ Potter なのか？
 
 現代のAI駆動開発では、以下の課題があります：
 - 大規模なコードベースでは、AIがコンテキストを失いやすい
 - モノリシックな実装では、並列開発が困難
 - 明確な境界がないと、AIが整合性のないコードを生成する
 
-Tsubo は、これらの課題を「**壺＝コンテキストの境界**」という発想で解決します。
+Potter は、これらの課題を「**壺＝コンテキストの境界**」という発想で解決します。
 
-**Tsubo の哲学:**
+**Potter の哲学:**
 - 人間は「**何をすべきか**」（Contract定義、ドメインの境界）に集中
 - AIは「**どう実装するか**」（実装の詳細）に集中
+- **Potter（職人）が壺を作り、AIが壺の中の固体オブジェクトを実装する**
 - **1つの壺（アプリケーション）に複数の固体オブジェクト（ドメイン/マイクロサービス）を入れる**
 - 各固体オブジェクトは独立し、疎結合を実現
 
@@ -91,7 +96,7 @@ go install ./cmd/potter
 
 ### API キー設定（AI 自動実装を使う場合）
 
-Tsubo の AI 駆動実装機能（`potter build --ai`）を使用するには、Claude API キーが必要です。
+Potter の AI 駆動実装機能（`potter build --ai`）を使用するには、Claude API キーが必要です。
 
 #### 1. API キーの取得
 
@@ -351,7 +356,7 @@ potter run (起動)
 - 🇯🇵 [日本語](./docs/ja/) - Japanese documentation
 
 ### 核心思想
-- [PHILOSOPHY.md](./docs/PHILOSOPHY.md) ([日本語](./docs/ja/PHILOSOPHY.md)) - Tsubo の核心的な考え方
+- [PHILOSOPHY.md](./docs/PHILOSOPHY.md) ([日本語](./docs/ja/PHILOSOPHY.md)) - Potter の核心的な考え方
 - [DOMAIN_DESIGN.md](./docs/DOMAIN_DESIGN.md) ([日本語](./docs/ja/DOMAIN_DESIGN.md)) - 壺と固体オブジェクトの関係
 
 ### 開発ガイド
@@ -400,7 +405,7 @@ MIT License（予定）
 
 ## 開発原則
 
-Tsubo は以下の原則に基づいて開発されます：
+Potter は以下の原則に基づいて開発されます：
 
 ### 🐳 Docker First
 - すべての実装は仮想環境（Docker）で実行

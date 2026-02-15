@@ -4,8 +4,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/staka121/tsubo/internal/analyzer"
-	"github.com/staka121/tsubo/pkg/types"
+	"github.com/staka121/potter/internal/analyzer"
+	"github.com/staka121/potter/pkg/types"
 )
 
 // GeneratePlan creates a complete implementation plan

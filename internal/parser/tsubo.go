@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/staka121/tsubo/pkg/types"
+	"github.com/staka121/potter/pkg/types"
 	"gopkg.in/yaml.v3"
 )
 

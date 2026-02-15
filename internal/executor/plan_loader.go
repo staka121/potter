@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/staka121/tsubo/pkg/types"
+	"github.com/staka121/potter/pkg/types"
 )
 
 // LoadPlan loads an implementation plan from a JSON file

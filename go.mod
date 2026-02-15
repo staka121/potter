@@ -1,4 +1,4 @@
-module github.com/staka121/tsubo
+module github.com/staka121/potter
 
 go 1.22
 

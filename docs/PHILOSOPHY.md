@@ -1,11 +1,13 @@
-# Tsubo Framework Design Philosophy
+# Potter Framework Design Philosophy
 
-## The Philosophy of Tsubo (Pot)
+## The Philosophy of Potter and Tsubo
 
 ### Origin of the Name
 
-**Tsubo (壺)** is a traditional Japanese unit of area measurement, representing small, partitioned spaces.
-However, in the Tsubo framework, "Tsubo" (pot) carries a deeper meaning.
+**Potter** is the craftsman who creates pots (Tsubo).
+**Tsubo (壺)** represents the pot - a container for the entire application.
+
+In the Potter framework, the craftsman (Potter) creates the pot (Tsubo), and AI implements the solid objects inside it.
 
 ```
       ┌─────────────────────────────────────────┐
@@ -33,10 +35,11 @@ However, in the Tsubo framework, "Tsubo" (pot) carries a deeper meaning.
 - Hide internal implementation from the outside
 - Improve modularity through information hiding
 
-**Tsubo's Encapsulation:**
+**Potter's Encapsulation:**
 - **Hide implementation details from humans**
 - **Clearly separate what AI handles from what humans decide**
 - Humans don't need to know how the contents of the pot interact
+- Potter (craftsman) creates the pot, AI fills it with implementations
 
 ### AI-First Principle
 
@@ -53,15 +56,15 @@ However, in the Tsubo framework, "Tsubo" (pot) carries a deeper meaning.
 - ✅ Performance optimization
 - ❌ Leave interface and responsibility decisions **to humans**
 
-### The Essence of Tsubo
+### The Essence of Potter
 
-> **The pot is a container representing the entire application.**
+> **Potter (craftsman) creates the pot (Tsubo) - the container representing the entire application.**
 >
 > **Domains are solid objects placed inside the pot.**
 > **Each solid object becomes one microservice.**
 >
 > One pot contains multiple solid objects (domains).
-> Humans decide **the shape of this pot** (the overall application picture),
+> Humans (Potter) decide **the shape of this pot** (the overall application picture),
 > and humans also decide **which objects (domains) to put in**.
 >
 > Each solid object (domain) is **tangible**, and humans create its concept.
@@ -106,7 +109,7 @@ Example: TODO Application
 
 ## Core Philosophy
 
-### Why Create Tsubo?
+### Why Create Potter?
 
 **Challenges in Modern Software Development:**
 - AI (LLMs) are powerful but prone to hallucinations in large codebases
@@ -114,9 +117,10 @@ Example: TODO Application
 - Parallel development of multiple features is desired, but difficult with existing architectures
 - Without clear boundaries and contracts, AI-generated code lacks consistency
 
-**Tsubo's Approach:**
+**Potter's Approach:**
 Use microservice boundaries as "context boundaries" for AI-driven development.
-By treating each service as a small, clear, independent "pot (Tsubo)":
+Potter (craftsman) creates pots (Tsubo), and AI fills them with implementations.
+By treating each service as a small, clear, independent "pot":
 - Split into scopes that AI can easily understand and implement
 - Dramatically increase development speed through parallel implementation
 - **Reduce hallucinations through Contract-Driven Testing (CDT)**
@@ -126,7 +130,7 @@ By treating each service as a small, clear, independent "pot (Tsubo)":
 Even if microservices aren't the best architecture, **start with Contract definitions**.
 Boundary definitions are always valuable.
 
-Tsubo Contracts serve as **Single Source of Truth with three roles**:
+Potter Contracts serve as **Single Source of Truth with three roles**:
 1. **For Humans**: Agreement specification between services
 2. **For AI**: Clear instruction on "what to do" (prompt context)
 3. **For Testing**: Validation criteria
@@ -135,7 +139,8 @@ Tsubo Contracts serve as **Single Source of Truth with three roles**:
 
 ### 0. AI First: Humans Concept, AI Implementation
 
-**Tsubo's Most Fundamental Principle**: Clearly separate responsibilities between humans and AI.
+**Potter's Most Fundamental Principle**: Clearly separate responsibilities between humans and AI.
+Potter (craftsman/human) creates the pot structure, AI implements the contents.
 
 **What Humans Decide (Tangible Things):**
 - Shape of the pot (interfaces, boundaries)
@@ -153,7 +158,7 @@ Tsubo Contracts serve as **Single Source of Truth with three roles**:
 | Approach | Human's Role | AI's Role |
 |----------|-------------|-----------|
 | Traditional | Design + Implementation | Code completion, review |
-| **Tsubo** | **Contract definition only** | **All implementation** |
+| **Potter** | **Contract definition only** | **All implementation** |
 
 **Rationale:**
 - Humans can focus on "what should be done"
@@ -304,7 +309,7 @@ Verify automatically while implementing. Especially **Contract-Driven Testing (C
 
 ### Core Components
 
-#### 1. Tsubo Contract Format
+#### 1. Potter Contract Format
 Contract definition format including semantic information for defining microservices.
 
 **See [CONTRACT_DESIGN.md](./CONTRACT_DESIGN.md) for details.**
@@ -400,7 +405,7 @@ potter run
 ## Goals
 
 ### Short-term Goals (MVP)
-- [x] Tsubo Contract Format specification
+- [x] Potter Contract Format specification
 - [x] Contract validator (Go implementation)
 - [x] Basic orchestrator (Go implementation)
 - [x] AI prompt generation engine
@@ -455,5 +460,6 @@ Tsubo does NOT aim for:
 
 ---
 
-> "Tsubo (pot) is a small space, but its collection creates a beautiful garden.
-> Similarly, a collection of small microservices creates a robust system."
+> "Potter (craftsman) creates pots (Tsubo), each a small but complete space.
+> A collection of well-crafted pots creates a beautiful garden.
+> Similarly, a collection of well-defined microservices creates a robust system."

@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/staka121/tsubo/pkg/types"
+	"github.com/staka121/potter/pkg/types"
 )
 
 // ExecutionResult represents the result of implementing a service

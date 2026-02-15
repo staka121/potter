@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/staka121/tsubo/internal/analyzer"
-	"github.com/staka121/tsubo/internal/executor"
-	"github.com/staka121/tsubo/internal/parser"
-	"github.com/staka121/tsubo/internal/planner"
-	"github.com/staka121/tsubo/pkg/types"
+	"github.com/staka121/potter/internal/analyzer"
+	"github.com/staka121/potter/internal/executor"
+	"github.com/staka121/potter/internal/parser"
+	"github.com/staka121/potter/internal/planner"
+	"github.com/staka121/potter/pkg/types"
 )
 
 const (
