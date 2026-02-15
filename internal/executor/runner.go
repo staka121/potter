@@ -220,7 +220,30 @@ func (r *Runner) executeObject(obj types.ObjectInWave, completedObjects *int, to
 
 	// Execute with Claude API
 	fmt.Printf("   🤖 Calling Claude API (this may take a while)...\n")
+
+	// Start spinner
+	stopSpinner := make(chan bool)
+	go func() {
+		spinChars := []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
+		i := 0
+		for {
+			select {
+			case <-stopSpinner:
+				fmt.Printf("\r   ")
+				return
+			default:
+				fmt.Printf("\r   %s Processing...", spinChars[i%len(spinChars)])
+				i++
+				time.Sleep(100 * time.Millisecond)
+			}
+		}
+	}()
+
 	response, err := r.client.Implement(prompt)
+	stopSpinner <- true
+	time.Sleep(100 * time.Millisecond) // Wait for spinner cleanup
+	fmt.Println() // New line after spinner
+
 	if err != nil {
 		result.Duration = time.Since(start)
 		return result, fmt.Errorf("API call failed: %w", err)
@@ -238,26 +261,39 @@ func (r *Runner) executeObject(obj types.ObjectInWave, completedObjects *int, to
 	// Extract files from response
 	files := extractFiles(response)
 	if len(files) == 0 {
-		fmt.Printf("   ⚠️  Warning: no files extracted from response\n")
-		fmt.Printf("   💡 Response preview (first 500 chars):\n")
+		fmt.Printf("   ❌ ERROR: No files extracted from response\n")
+		fmt.Printf("   💡 Response preview (first 1000 chars):\n")
 		preview := response
-		if len(preview) > 500 {
-			preview = preview[:500] + "..."
+		if len(preview) > 1000 {
+			preview = preview[:1000] + "..."
 		}
-		fmt.Printf("   %s\n", strings.ReplaceAll(preview, "\n", "\n   "))
-	} else {
-		fmt.Printf("   📦 Extracted %d file(s) from response\n", len(files))
-
-		// Save implementation to implementations directory
-		serviceDir := filepath.Join(r.plan.ImplementationsDir, obj.Name)
-		if err := saveImplementation(serviceDir, files); err != nil {
-			result.Duration = time.Since(start)
-			return result, fmt.Errorf("failed to save implementation: %w", err)
+		// Indent each line
+		lines := strings.Split(preview, "\n")
+		for _, line := range lines {
+			fmt.Printf("      %s\n", line)
 		}
-
-		fmt.Printf("   💾 Saved to: %s\n", serviceDir)
+		fmt.Printf("\n   💡 Tip: Check if Claude's response includes code blocks with file paths.\n")
+		fmt.Printf("   💡 Expected formats:\n")
+		fmt.Printf("      - <file path=\"main.go\">```go...```</file>\n")
+		fmt.Printf("      - `main.go`: ```go...```\n")
+		fmt.Printf("      - ```go:main.go...```\n")
+		result.Duration = time.Since(start)
+		return result, fmt.Errorf("no files extracted from Claude's response")
 	}
 
+	fmt.Printf("   📦 Extracted %d file(s) from response:\n", len(files))
+	for filename := range files {
+		fmt.Printf("      - %s\n", filename)
+	}
+
+	// Save implementation to implementations directory
+	serviceDir := filepath.Join(r.plan.ImplementationsDir, obj.Name)
+	if err := saveImplementation(serviceDir, files); err != nil {
+		result.Duration = time.Since(start)
+		return result, fmt.Errorf("failed to save implementation: %w", err)
+	}
+
+	fmt.Printf("   💾 Saved to: %s\n", serviceDir)
 	fmt.Printf("   ⏱️  Completed in %s\n", result.Duration)
 	fmt.Printf("   ✅ %s implemented successfully\n", obj.Name)
 
