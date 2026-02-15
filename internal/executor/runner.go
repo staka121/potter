@@ -28,7 +28,8 @@ type Runner struct {
 	client      *ClaudeClient
 	generator   *PromptGenerator
 	plan        *types.ImplementationPlan
-	concurrency int // 0 = unlimited
+	concurrency int    // 0 = unlimited
+	tempDir     string // temporary directory for this run
 }
 
 // NewRunner creates a new execution runner
@@ -38,17 +39,30 @@ func NewRunner(plan *types.ImplementationPlan) (*Runner, error) {
 		return nil, err
 	}
 
+	// Create timestamped temp directory
+	timestamp := time.Now().Format("20060102150405")
+	tempDir := filepath.Join("/tmp", timestamp)
+	if err := os.MkdirAll(tempDir, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create temp directory: %w", err)
+	}
+
 	return &Runner{
 		client:      client,
 		generator:   NewPromptGenerator(plan),
 		plan:        plan,
 		concurrency: 0, // unlimited by default
+		tempDir:     tempDir,
 	}, nil
 }
 
 // SetConcurrency sets the maximum number of parallel executions
 func (r *Runner) SetConcurrency(n int) {
 	r.concurrency = n
+}
+
+// GetTempDir returns the temporary directory for this run
+func (r *Runner) GetTempDir() string {
+	return r.tempDir
 }
 
 // ExecuteAll executes all waves in the implementation plan
@@ -177,7 +191,7 @@ func (r *Runner) executeObject(obj types.ObjectInWave) (ExecutionResult, error) 
 	}
 
 	// Save prompt to file for debugging
-	promptFile := filepath.Join("/tmp", fmt.Sprintf("tsubo-prompt-%s.md", obj.Name))
+	promptFile := filepath.Join(r.tempDir, fmt.Sprintf("tsubo-prompt-%s.md", obj.Name))
 	if err := os.WriteFile(promptFile, []byte(prompt), 0644); err != nil {
 		fmt.Printf("[%s] Warning: failed to save prompt file: %v\n", obj.Name, err)
 	}
@@ -194,7 +208,7 @@ func (r *Runner) executeObject(obj types.ObjectInWave) (ExecutionResult, error) 
 	result.Duration = time.Since(start)
 
 	// Save response to file
-	responseFile := filepath.Join("/tmp", fmt.Sprintf("tsubo-response-%s.md", obj.Name))
+	responseFile := filepath.Join(r.tempDir, fmt.Sprintf("tsubo-response-%s.md", obj.Name))
 	if err := os.WriteFile(responseFile, []byte(response), 0644); err != nil {
 		fmt.Printf("[%s] Warning: failed to save response file: %v\n", obj.Name, err)
 	}

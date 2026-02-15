@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/staka121/potter/internal/analyzer"
 	"github.com/staka121/potter/internal/executor"
@@ -131,6 +132,9 @@ func executeWithAI(plan *types.ImplementationPlan, concurrency int) error {
 		return fmt.Errorf("failed to create runner: %w", err)
 	}
 
+	fmt.Printf("Temporary files will be saved to: %s\n", runner.GetTempDir())
+	fmt.Println()
+
 	// Set concurrency limit if specified
 	if concurrency > 0 {
 		runner.SetConcurrency(concurrency)
@@ -154,6 +158,13 @@ func executeWithAI(plan *types.ImplementationPlan, concurrency int) error {
 func generatePromptsOnly(plan *types.ImplementationPlan) error {
 	fmt.Printf("%s[Step 2] Generating implementation prompts%s\n", colorYellow, colorReset)
 	generator := executor.NewPromptGenerator(plan)
+
+	// Create timestamped temp directory
+	timestamp := time.Now().Format("20060102150405")
+	tempDir := filepath.Join("/tmp", timestamp)
+	if err := os.MkdirAll(tempDir, 0755); err != nil {
+		return fmt.Errorf("failed to create temp directory: %w", err)
+	}
 
 	for _, wave := range plan.Waves {
 		fmt.Printf("\n%sWave %d:%s\n", colorBlue, wave.Wave, colorReset)
@@ -180,7 +191,7 @@ func generatePromptsOnly(plan *types.ImplementationPlan) error {
 			}
 
 			// Write prompt to file
-			promptFile := fmt.Sprintf("/tmp/tsubo-prompt-%s.md", obj.Name)
+			promptFile := filepath.Join(tempDir, fmt.Sprintf("tsubo-prompt-%s.md", obj.Name))
 			if err := os.WriteFile(promptFile, []byte(prompt), 0644); err != nil {
 				return fmt.Errorf("failed to write prompt file: %w", err)
 			}
@@ -189,6 +200,8 @@ func generatePromptsOnly(plan *types.ImplementationPlan) error {
 		}
 	}
 
+	fmt.Println()
+	fmt.Printf("%sPrompts saved to: %s%s\n", colorGreen, tempDir, colorReset)
 	fmt.Println()
 	printBuildSummary(plan)
 
