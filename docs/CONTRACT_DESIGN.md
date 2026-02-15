@@ -1,383 +1,338 @@
-# Contract 設計思想
+# Tsubo Contract Design
 
-## Contract の本質的な役割
+## Overview
 
-Tsubo における Contract は、従来のAPI定義を超えた、**3つの役割を持つ Single Source of Truth** です：
+Tsubo Contracts are **structured specifications** that define microservices with semantic information that AI can understand and humans can read.
 
-### 1. 人間向け：サービス間の合意仕様書
-- チーム間のコミュニケーションツール
-- システム全体の理解を助ける設計ドキュメント
-- 変更管理の基準
+## Contract Format
 
-### 2. AI向け：プロンプトコンテキストとしての指示書
-- **「このサービスが何をすべきか」の明確な指示**
-- 実装時にAIに注入されるコンテキスト
-- ハルシネーション防止のためのガードレール
+### File Extensions
 
-### 3. テスト向け：バリデーションの基準
-- Contract Testing の自動生成
-- 実装の正しさの検証
-- リグレッション防止
+- **`.tsubo.yaml`**: Application (pot) definition
+- **`.object.yaml`**: Service (solid object) definition
 
-## 既存フォーマットの限界と Tsubo の拡張
-
-### OpenAPI / Protobuf の強み
-- ✅ 型定義が明確
-- ✅ エンドポイント/メソッド定義
-- ✅ 広く採用されている
-- ✅ ツールエコシステムが豊富
-
-### OpenAPI / Protobuf の限界（AIコンテキストとして）
-- ❌ **ビジネス上の目的**が不明確
-- ❌ **振る舞いの意図**が欠けている
-- ❌ **エッジケースでの期待動作**が記述できない
-- ❌ **「なぜそうすべきか」の文脈**が不足
-
-### AIがハルシネーションを起こす理由
-型やエンドポイントの定義だけでは不十分。AIは以下が不明確なときに誤った実装を生成する：
-- このフィールドが `null` になるのはどんな状況か？
-- エラー時の振る舞いはどうあるべきか？
-- このステータスコードを返すビジネス上の理由は？
-- 同時実行時の整合性はどう保証するか？
-
-## Tsubo Contract Format の設計方針
-
-### 原則1: 既存標準との互換性
-- OpenAPI や Protobuf を**完全に置き換えるのではなく、拡張する**
-- 既存ツールとの連携を可能にする
-- 段階的な移行を可能にする
-
-### 原則2: セマンティック情報をファーストクラスに
-- ビジネスコンテキスト、意図、制約を明示的に記述
-- AIが理解しやすい構造化された形式
-- 人間が読んで理解しやすい
-
-### 原則3: 階層的な詳細度
-- 必須：基本的なAPI定義（OpenAPI互換）
-- 推奨：セマンティック情報（ビジネスコンテキスト）
-- オプション：詳細な振る舞い定義、例、制約
-
-## Tsubo Contract Format の構造
-
-### 基本構造
+### Basic Structure
 
 ```yaml
-# user-service.tsubo.yaml
 version: "1.0"
+
+service:
+  name: service-name
+  description: Service description
+  runtime:
+    language: go
+    version: "1.22"
+
+api:
+  type: rest
+  port: 8080
+  endpoints:
+    - path: /resource
+      method: GET
+      description: Endpoint description
+      response:
+        type: object
+        properties:
+          field: type
+
+dependencies:
+  services:
+    - name: other-service
+      endpoint: http://other-service:8080
+
+  databases:
+    - type: postgres
+      name: db_name
+      schema:
+        tables:
+          - name: table_name
+            columns:
+              - name: column_name
+                type: data_type
+```
+
+## Key Sections
+
+### 1. Service Metadata
+
+```yaml
 service:
   name: user-service
-  description: ユーザー管理サービス
+  description: User management service
+  runtime:
+    language: go
+    version: "1.22"
+```
 
-  # ビジネスコンテキスト（AI向け）
-  context:
-    purpose: |
-      このサービスは、アプリケーションのユーザーライフサイクル全体を管理します。
-      ユーザーの作成、認証、プロフィール更新、削除を担当します。
+**Purpose:**
+- Identifies the service
+- Specifies implementation language
+- Sets runtime requirements
 
-    domain: authentication-and-authorization
+### 2. API Definition
 
-    responsibilities:
-      - ユーザーの CRUD 操作
-      - メールアドレスの一意性保証
-      - パスワードのハッシュ化
-      - ユーザー削除時の関連データのクリーンアップ
-
-    constraints:
-      - メールアドレスは必ず小文字に正規化する
-      - 削除されたユーザーのメールアドレスは再利用不可
-      - パスワードは bcrypt でハッシュ化（cost=12）
-
-# OpenAPI 3.x ベースのエンドポイント定義
+```yaml
 api:
-  version: "1.0.0"
-  base_path: /api/v1
-
+  type: rest
+  port: 8080
   endpoints:
-    - id: create_user
-      method: POST
-      path: /users
-
-      # 従来の定義
-      request:
-        content_type: application/json
-        schema:
-          type: object
-          required: [email, password, name]
-          properties:
-            email: {type: string, format: email}
-            password: {type: string, minLength: 8}
-            name: {type: string}
-
+    - path: /users/{id}
+      method: GET
+      description: Get user by ID
       response:
-        200:
-          schema: {$ref: "#/types/User"}
-        400:
-          schema: {$ref: "#/types/Error"}
-        409:
-          schema: {$ref: "#/types/Error"}
+        type: object
+        properties:
+          id:
+            type: string
+          name:
+            type: string
+          email:
+            type: string
+```
 
-      # Tsubo 拡張: セマンティック情報
-      semantics:
-        intent: |
-          新しいユーザーをシステムに登録します。
-          メールアドレスの一意性をチェックし、パスワードを安全にハッシュ化します。
+**Purpose:**
+- Define HTTP endpoints
+- Specify request/response schemas
+- Document expected behavior
 
-        behavior:
-          success: |
-            - メールアドレスを小文字に正規化
-            - パスワードを bcrypt でハッシュ化（cost=12）
-            - データベースに保存
-            - 作成されたユーザーオブジェクトを返す
+### 3. Dependencies
 
-          edge_cases:
-            - case: メールアドレスが既に存在する
-              response: 409 Conflict
-              body: {error: "Email already exists"}
-              reason: ユーザーは一意でなければならない
-
-            - case: パスワードが弱い（8文字未満）
-              response: 400 Bad Request
-              body: {error: "Password too weak"}
-              reason: セキュリティ要件
-
-            - case: メールアドレスの形式が不正
-              response: 400 Bad Request
-              body: {error: "Invalid email format"}
-
-        examples:
-          - name: 正常なユーザー作成
-            request:
-              email: "user@example.com"
-              password: "SecurePass123!"
-              name: "John Doe"
-            response:
-              status: 200
-              body:
-                id: "usr_123456"
-                email: "user@example.com"
-                name: "John Doe"
-                created_at: "2026-02-15T10:00:00Z"
-
-          - name: 重複メールアドレス
-            request:
-              email: "existing@example.com"
-              password: "SecurePass123!"
-              name: "Jane Doe"
-            response:
-              status: 409
-              body:
-                error: "Email already exists"
-
-# 型定義
-types:
-  User:
-    description: システム内のユーザーを表現します
-    properties:
-      id:
-        type: string
-        format: uuid
-        description: ユーザーの一意識別子
-        immutable: true
-      email:
-        type: string
-        format: email
-        description: ユーザーのメールアドレス（小文字正規化済み）
-        unique: true
-      name:
-        type: string
-        description: ユーザーの表示名
-      created_at:
-        type: string
-        format: date-time
-        description: ユーザー作成日時
-        immutable: true
-
-# 依存関係
+```yaml
 dependencies:
   services:
     - name: auth-service
-      reason: ユーザー作成時に初期認証トークンを発行
-      endpoints: ["/tokens"]
-
-    - name: email-service
-      reason: ウェルカムメール送信
-      endpoints: ["/send"]
-      optional: true  # メール送信失敗してもユーザー作成は成功
+      endpoint: http://auth-service:8081
+      description: Authentication and authorization
 
   databases:
-    - name: user-db
-      type: postgresql
-      tables: [users, user_profiles]
-
-# テスト定義（Contract Testing）
-tests:
-  contract:
-    - name: ユーザー作成の契約テスト
-      given: 有効なユーザーデータ
-      when: POST /users
-      then:
-        status: 200
-        body_schema: {$ref: "#/types/User"}
-        invariants:
-          - email は小文字である
-          - id は UUID 形式である
-          - created_at は現在時刻に近い
-
-    - name: 重複メールアドレスの契約テスト
-      given: 既に存在するメールアドレス
-      when: POST /users
-      then:
-        status: 409
-        body.error: "Email already exists"
-
-# パフォーマンス要件
-performance:
-  latency:
-    p50: 100ms
-    p95: 300ms
-    p99: 500ms
-
-  throughput:
-    target: 1000 req/sec
-
-  concurrency:
-    handling: |
-      同一メールアドレスでの同時作成リクエストは、
-      データベースの UNIQUE 制約により1つのみ成功する。
-      先に完了したトランザクションが成功し、
-      他は 409 Conflict を返す。
+    - type: postgres
+      name: user_db
+      schema:
+        tables:
+          - name: users
+            columns:
+              - name: id
+                type: uuid
+                primary_key: true
+              - name: email
+                type: varchar(255)
+                required: true
 ```
 
-## セマンティック情報の構造
+**Purpose:**
+- Declare service dependencies
+- Define database schemas
+- Enable dependency graph analysis
 
-### 1. Context（サービス全体のコンテキスト）
+## Contract Principles
+
+### 1. Semantic Richness
+
+Contracts must include **why**, not just **what**:
+
 ```yaml
-context:
-  purpose: |
-    このサービスの存在理由とビジネス上の目的
-  domain: ドメイン分類
-  responsibilities: [責務のリスト]
-  constraints: [制約のリスト]
+api:
+  endpoints:
+    - path: /users
+      method: POST
+      description: Create a new user
+      semantics:
+        intent: Register new user in the system
+        behavior:
+          success: Returns created user with generated ID
+          edge_cases:
+            - case: Email already exists
+              response: 409 Conflict
+              reason: Email must be unique across all users
 ```
 
-### 2. Semantics（エンドポイントごとのセマンティクス）
-```yaml
-semantics:
-  intent: この操作の意図
-  behavior:
-    success: 正常時の振る舞い
-    edge_cases:
-      - case: エッジケースの説明
-        response: 期待されるレスポンス
-        reason: なぜそうすべきか
-  examples: 具体例のリスト
-```
+### 2. Single Source of Truth
 
-### 3. Dependencies（依存関係の明示）
+Contracts serve three purposes:
+1. **For Humans**: Service specification and agreement
+2. **For AI**: Implementation instructions and context
+3. **For Tests**: Validation criteria
+
+### 3. Language Agnostic
+
+Contracts are defined in YAML and are language-independent:
+- Can generate Go services
+- Future support for TypeScript, Python
+- Compatible with OpenAPI/Protobuf
+
+## Example: Complete Contract
+
 ```yaml
+version: "1.0"
+
+service:
+  name: user-service
+  description: User management and authentication service
+  runtime:
+    language: go
+    version: "1.22"
+
+api:
+  type: rest
+  port: 8080
+  endpoints:
+    - path: /health
+      method: GET
+      description: Health check endpoint
+      response:
+        type: object
+        properties:
+          status:
+            type: string
+            example: "healthy"
+
+    - path: /users
+      method: POST
+      description: Create a new user
+      request:
+        type: object
+        properties:
+          name:
+            type: string
+            required: true
+          email:
+            type: string
+            required: true
+      response:
+        type: object
+        properties:
+          id:
+            type: string
+          name:
+            type: string
+          email:
+            type: string
+
+    - path: /users/{id}
+      method: GET
+      description: Get user by ID
+      response:
+        type: object
+        properties:
+          id:
+            type: string
+          name:
+            type: string
+          email:
+            type: string
+
 dependencies:
-  services:
-    - name: サービス名
-      reason: なぜ依存するか
-      endpoints: 使用するエンドポイント
-      optional: オプショナルかどうか
+  services: []
+
+  databases:
+    - type: postgres
+      name: user_db
+      schema:
+        tables:
+          - name: users
+            columns:
+              - name: id
+                type: uuid
+                primary_key: true
+              - name: name
+                type: varchar(255)
+                required: true
+              - name: email
+                type: varchar(255)
+                required: true
+              - name: created_at
+                type: timestamp
+                default: now()
 ```
 
-## AI へのコンテキスト注入
+## Best Practices
 
-Contract を AI に注入する際の形式：
+### 1. Be Explicit
 
-```markdown
-# サービス実装指示
+❌ **Bad:**
+```yaml
+- path: /users
+  method: POST
+```
 
-あなたは `user-service` を実装しています。
+✅ **Good:**
+```yaml
+- path: /users
+  method: POST
+  description: Create a new user account
+  request:
+    type: object
+    properties:
+      name:
+        type: string
+        required: true
+      email:
+        type: string
+        required: true
+        pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+  response:
+    type: object
+    properties:
+      id: string
+      name: string
+      email: string
+```
 
-## サービスの目的
-{context.purpose}
+### 2. Include Edge Cases
 
-## 責務
-{context.responsibilities}
+```yaml
+endpoints:
+  - path: /users
+    method: POST
+    semantics:
+      edge_cases:
+        - case: Email already exists
+          response: 409 Conflict
+          reason: Email must be unique
+        - case: Invalid email format
+          response: 400 Bad Request
+          reason: Email must match RFC 5322 format
+```
 
-## 制約
-{context.constraints}
+### 3. Document Intent
 
-## 実装すべきエンドポイント: POST /users
+```yaml
+service:
+  context:
+    purpose: |
+      User management service handles user registration,
+      authentication, and profile management.
+    responsibilities:
+      - User CRUD operations
+      - Email uniqueness validation
+      - Password hashing and verification
+    constraints:
+      - Emails must be unique
+      - Passwords must be hashed with bcrypt
+      - User IDs are UUIDs
+```
 
-### 意図
-{semantics.intent}
+## Contract Validation
 
-### 正常時の振る舞い
-{semantics.behavior.success}
+Contracts are automatically validated by `tsubo-plan`:
 
-### エッジケース
-{semantics.behavior.edge_cases}
+```bash
+# Validate contract
+tsubo build app.tsubo.yaml
 
-### 例
-{semantics.examples}
+# Contract validation checks:
+# - YAML syntax
+# - Required fields
+# - Type consistency
+# - Dependency resolution
+```
+
+## See Also
+
+- [PHILOSOPHY.md](./PHILOSOPHY.md) - Core philosophy
+- [DEVELOPMENT_PRINCIPLES.md](./DEVELOPMENT_PRINCIPLES.md) - Development rules
+- [WHY_GO.md](./WHY_GO.md) - Why Go language
 
 ---
 
-上記の契約に従って、実装してください。
-型定義、エラーハンドリング、エッジケースの処理を含めてください。
-```
-
-## Contract から生成されるもの
-
-### 1. AI プロンプト
-- サービス実装時に注入されるコンテキスト
-
-### 2. Contract Tests
-- Pact スタイルの契約テスト
-- Consumer/Provider 両側のテスト
-
-### 3. OpenAPI スキーマ
-- 既存ツールとの互換性のため
-- API ドキュメント生成
-
-### 4. Mock Server
-- 開発・テスト用のモックサーバー
-- 契約に基づいた応答
-
-### 5. クライアントコード
-- 型安全なクライアントライブラリ
-- 各言語向けの SDK
-
-## 段階的な採用戦略
-
-### Phase 1: 最小限の Contract
-```yaml
-service:
-  name: user-service
-api:
-  endpoints: [...]  # 基本的な定義のみ
-```
-
-### Phase 2: セマンティック情報の追加
-```yaml
-service:
-  name: user-service
-  context: {purpose: "..."}
-api:
-  endpoints:
-    - semantics: {intent: "..."}
-```
-
-### Phase 3: 完全な Contract
-```yaml
-# すべての要素を含む
-service: ...
-api: ...
-types: ...
-dependencies: ...
-tests: ...
-performance: ...
-```
-
-## まとめ
-
-Tsubo Contract は：
-- ✅ OpenAPI/Protobuf の良い部分を継承
-- ✅ セマンティック情報を追加してAIのハルシネーションを防ぐ
-- ✅ 1つの定義から複数の成果物を生成（DRY原則）
-- ✅ 段階的な採用が可能
-- ✅ 既存ツールとの互換性を維持
+> "A good Contract makes implementation trivial. A great Contract makes AI implementation perfect."

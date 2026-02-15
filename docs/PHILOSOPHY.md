@@ -1,101 +1,101 @@
-# Tsubo フレームワーク設計思想
+# Tsubo Framework Design Philosophy
 
-## 壺（Tsubo）の哲学
+## The Philosophy of Tsubo (Pot)
 
-### 名前の由来
+### Origin of the Name
 
-**Tsubo（壺）** は、日本の伝統的な面積単位であり、小さく区切られた空間を表します。
-しかし、Tsubo フレームワークにおける「壺」は、より深い意味を持ちます。
+**Tsubo (壺)** is a traditional Japanese unit of area measurement, representing small, partitioned spaces.
+However, in the Tsubo framework, "Tsubo" (pot) carries a deeper meaning.
 
 ```
       ┌─────────────────────────────────────────┐
-      │   壺（Tsubo）= アプリケーション全体       │  ← 人間が形を決める
+      │   Tsubo (Pot) = Entire Application      │  ← Humans define the shape
       │                                         │
       │  ┌──────────┐  ┌──────────┐            │
-      │  │  TODO    │  │   User   │   ...      │  ← 固体オブジェクト
-      │  │  ドメイン │  │  ドメイン │            │     (各マイクロサービス)
+      │  │  TODO    │  │   User   │   ...      │  ← Solid Objects
+      │  │  Domain  │  │  Domain  │            │     (Microservices)
       │  │┌────────┐│  │┌────────┐│            │
-      │  ││Contract││  ││Contract││            │  ← Contract（形状）
+      │  ││Contract││  ││Contract││            │  ← Contract (Shape)
       │  │└────────┘│  │└────────┘│            │
       │  │  ┌────┐ │  │  ┌────┐ │            │
-      │  │  │実装│ │  │  │実装│ │            │  ← AIが決める
+      │  │  │Impl│ │  │  │Impl│ │            │  ← AI decides implementation
       │  │  └────┘ │  │  └────┘ │            │
       │  └──────────┘  └──────────┘            │
       │                                         │
       └─────────────────────────────────────────┘
 
-      1つの壺（アプリケーション）= 複数の固体オブジェクト（ドメイン/マイクロサービス）
+      One Pot (Application) = Multiple Solid Objects (Domains/Microservices)
 ```
 
-### カプセル化の新しい意味
+### New Meaning of Encapsulation
 
-**伝統的なカプセル化（OOP）:**
-- 内部実装を外部から隠蔽する
-- 情報隠蔽によるモジュール性の向上
+**Traditional Encapsulation (OOP):**
+- Hide internal implementation from the outside
+- Improve modularity through information hiding
 
-**Tsubo のカプセル化:**
-- **人間から実装の詳細を隠蔽する**
-- **AIに任せる領域と人間が決める領域を明確に分離する**
-- 壺の中身がどう作用し合うかは、人間が知る必要がない
+**Tsubo's Encapsulation:**
+- **Hide implementation details from humans**
+- **Clearly separate what AI handles from what humans decide**
+- Humans don't need to know how the contents of the pot interact
 
-### AI First の原則
+### AI-First Principle
 
-**人間の役割:**
-- ✅ **壺の形を決める**（インターフェース、境界）
-- ✅ **壺に何を入れるかを決める**（責務、コンテキスト）
-- ✅ **壺を覗いた時に何が見えるかを定義する**（期待される振る舞い、I/O）
-- ❌ 壺の中身がどう作用し合うかは**知る必要がない**
+**Human's Role:**
+- ✅ **Define the shape of the pot** (interfaces, boundaries)
+- ✅ **Decide what goes into the pot** (responsibilities, context)
+- ✅ **Define what you see when you look into the pot** (expected behavior, I/O)
+- ❌ No need to know **how the contents interact**
 
-**AIの役割:**
-- ✅ **壺の中身がどう作用し合うかを決める**（実装の詳細）
-- ✅ エッジケースの処理
-- ✅ エラーハンドリング
-- ✅ パフォーマンス最適化
-- ❌ インターフェースや責務の決定は**人間に任せる**
+**AI's Role:**
+- ✅ **Decide how the contents interact** (implementation details)
+- ✅ Handle edge cases
+- ✅ Error handling
+- ✅ Performance optimization
+- ❌ Leave interface and responsibility decisions **to humans**
 
-### Tsubo の本質
+### The Essence of Tsubo
 
-> **壺は、アプリケーション全体を表す容器である。**
+> **The pot is a container representing the entire application.**
 >
-> **ドメインは、壺の中に入れる固体オブジェクトである。**
-> **各固体オブジェクトは、1つのマイクロサービスとなる。**
+> **Domains are solid objects placed inside the pot.**
+> **Each solid object becomes one microservice.**
 >
-> 1つの壺には、複数の固体オブジェクト（ドメイン）が入る。
-> この壺の形（アプリケーションの全体像）は**人が決め**、
-> どのオブジェクト（ドメイン）を入れるかも**人が決める**。
+> One pot contains multiple solid objects (domains).
+> Humans decide **the shape of this pot** (the overall application picture),
+> and humans also decide **which objects (domains) to put in**.
 >
-> 各固体オブジェクト（ドメイン）は**触れるもの**であり、その概念は**人が作る**。
-> ただし、各オブジェクトの内部構造がどのように作用するかについては**知る必要がない**。
+> Each solid object (domain) is **tangible**, and humans create its concept.
+> However, there's **no need to know** how the internal structure of each object works.
 >
-> 故に、それらの内部構造がどのように作用するかは**AIによって定められる**。
+> Therefore, how these internal structures work is **determined by AI**.
 >
-> 人は壺に対して**どのオブジェクト（ドメイン）を入れるのか**、
-> そして各オブジェクトを覗き込んだときに**何が見えるのか**という
-> **インターフェース（Contract）のみを気にすべき**である。
+> Humans should only care about **which objects (domains) to put in the pot**,
+> and **what you see** when looking into each object—
+> that is, **only the interface (Contract)**.
 >
-> **1つの壺（アプリケーション）= 複数の固体オブジェクト（ドメイン/マイクロサービス）**
+> **One Pot (Application) = Multiple Solid Objects (Domains/Microservices)**
 >
-> これにより、各ドメインの独立性が担保され、疎結合なシステムが実現される。
+> This ensures the independence of each domain and realizes a loosely-coupled system.
 
-### 物理的なイメージ
+### Physical Imagery
 
 ```
-壺（アプリケーション全体）
-  ├─ 固体オブジェクト1 = TODO ドメイン → todo-service
-  ├─ 固体オブジェクト2 = User ドメイン → user-service
-  └─ 固体オブジェクト3 = Auth ドメイン → auth-service
+Pot (Entire Application)
+  ├─ Solid Object 1 = TODO Domain → todo-service
+  ├─ Solid Object 2 = User Domain → user-service
+  └─ Solid Object 3 = Auth Domain → auth-service
 
-各固体オブジェクトは:
-- 独立している（他と混ざらない）
-- 触れることができる（具体的）
-- Contract で形状が定義される
-- 内部構造は AI が作る
+Each solid object is:
+- Independent (doesn't mix with others)
+- Tangible (concrete)
+- Defined by Contract (shape)
+- Implementation created by AI
 
-例: TODO アプリケーション
+Example: TODO Application
 ┌─────────────────────────────┐
-│    壺（TODO アプリ）         │
+│    Pot (TODO App)           │
 │                             │
-│  [TODO]  [User]  [Auth]     │ ← 固体オブジェクト
+│  [TODO]  [User]  [Auth]     │ ← Solid Objects
 │    ↓       ↓       ↓        │
 │  todo-  user-  auth-        │
 │  service service service    │
@@ -104,222 +104,222 @@
 
 ---
 
-## 核心思想
+## Core Philosophy
 
-### なぜ Tsubo を作るのか
+### Why Create Tsubo?
 
-**現代のソフトウェア開発における課題:**
-- AI（LLM）は強力だが、大規模なコードベースではハルシネーション（幻覚）が発生しやすい
-- モノリシックな実装では、AIが全体像を把握しきれず、コンテキストが散逸する
-- 複数の機能を並列に開発したいが、既存のアーキテクチャでは困難
-- AIによる開発では、明確な境界と契約がないと、整合性が取れないコードが生成される
+**Challenges in Modern Software Development:**
+- AI (LLMs) are powerful but prone to hallucinations in large codebases
+- In monolithic implementations, AI cannot grasp the big picture, and context gets scattered
+- Parallel development of multiple features is desired, but difficult with existing architectures
+- Without clear boundaries and contracts, AI-generated code lacks consistency
 
-**Tsubo のアプローチ:**
-マイクロサービスの境界を、AI駆動開発のための「コンテキスト境界」として活用する。
-各サービスを小さく、明確で、独立した「壺（Tsubo）」として扱うことで：
-- AI が理解・実装しやすいスコープに分割
-- 並列実装による開発速度の劇的な向上
-- **Contract-driven Testing（CDT）によるハルシネーションの削減**
-- 自動検証による品質保証
+**Tsubo's Approach:**
+Use microservice boundaries as "context boundaries" for AI-driven development.
+By treating each service as a small, clear, independent "pot (Tsubo)":
+- Split into scopes that AI can easily understand and implement
+- Dramatically increase development speed through parallel implementation
+- **Reduce hallucinations through Contract-Driven Testing (CDT)**
+- Ensure quality through automated verification
 
-**重要な考え方:**
-仮にマイクロサービス化がベストなアーキテクチャでないとしても、**Contract定義の仕組みから始める**。
-なぜなら、境界の定義は常に役立つからである。
+**Important Concept:**
+Even if microservices aren't the best architecture, **start with Contract definitions**.
+Boundary definitions are always valuable.
 
-Tsubo の Contract は、**3つの役割を持つ Single Source of Truth**：
-1. **人間向け**: サービス間の合意仕様書
-2. **AI向け**: 「何をすべきか」の明確な指示書（プロンプトコンテキスト）
-3. **テスト向け**: バリデーションの基準
+Tsubo Contracts serve as **Single Source of Truth with three roles**:
+1. **For Humans**: Agreement specification between services
+2. **For AI**: Clear instruction on "what to do" (prompt context)
+3. **For Testing**: Validation criteria
 
-## 設計原則
+## Design Principles
 
-### 0. AI First: 人間はコンセプト、AIは実装
+### 0. AI First: Humans Concept, AI Implementation
 
-**Tsubo の最も根本的な原則**: 人間とAIの責務を明確に分離する。
+**Tsubo's Most Fundamental Principle**: Clearly separate responsibilities between humans and AI.
 
-**人間が決めること（触れるもの）:**
-- 壺の形（インターフェース、境界）
-- 壺に何を入れるか（責務、ドメインロジック）
-- 壺を覗いた時に何が見えるか（期待される振る舞い、I/O）
+**What Humans Decide (Tangible Things):**
+- Shape of the pot (interfaces, boundaries)
+- What to put in the pot (responsibilities, domain logic)
+- What you see when looking into the pot (expected behavior, I/O)
 
-**AIが決めること（触れないもの）:**
-- 壺の中身がどう作用し合うか（実装の詳細）
-- エラーハンドリングの具体的な方法
-- パフォーマンス最適化
-- エッジケースの処理
+**What AI Decides (Intangible Things):**
+- How the contents of the pot interact (implementation details)
+- Specific error handling methods
+- Performance optimization
+- Edge case handling
 
-**従来の開発との違い:**
+**Difference from Traditional Development:**
 
-| アプローチ | 人間の役割 | AIの役割 |
-|----------|-----------|---------|
-| 従来 | 設計 + 実装 | コード補完、レビュー |
-| **Tsubo** | **Contract定義のみ** | **実装すべて** |
+| Approach | Human's Role | AI's Role |
+|----------|-------------|-----------|
+| Traditional | Design + Implementation | Code completion, review |
+| **Tsubo** | **Contract definition only** | **All implementation** |
 
-**理由:**
-- 人間は「何をすべきか」を考えることに集中できる
-- AIは「どう実装するか」を考えることに集中できる
-- 役割分担により、ハルシネーションが減る（AIは明確な指示に従うだけ）
-- 開発速度が劇的に向上する
+**Rationale:**
+- Humans can focus on "what should be done"
+- AI can focus on "how to implement it"
+- Division of labor reduces hallucinations (AI just follows clear instructions)
+- Development speed dramatically increases
 
-### 1. Contract is Everything（契約がすべて）
+### 1. Contract is Everything
 
-**実装よりも先に、Contract を定義する。Contract は「壺の設計図」である。**
+**Define Contracts before implementation. Contracts are "blueprints of the pot".**
 
-Contract は単なるAPI定義ではなく、**壺の形と中身を定義するもの**：
-- **壺の形**: インターフェース（何を入れるか、何が見えるか）
-- **壺の中身**: コンテキスト（責務、制約、期待される振る舞い）
-- **壺の使い方**: 依存関係、パフォーマンス要件
+Contracts are not just API definitions, but **define the shape and contents of the pot**:
+- **Shape of the pot**: Interface (what to put in, what you see)
+- **Contents of the pot**: Context (responsibilities, constraints, expected behavior)
+- **How to use the pot**: Dependencies, performance requirements
 
-Contract の3つの役割：
-- **人間向け**: 壺の設計図、サービス間の合意仕様書
-- **AI向け**: 「この壺の中身をどう作るか」の明確な指示書（プロンプトコンテキスト）
-- **テスト向け**: 壺が正しく機能しているかのバリデーション基準
+Three roles of Contracts:
+- **For Humans**: Blueprint of the pot, agreement specification between services
+- **For AI**: Clear instruction on "how to create the contents of this pot" (prompt context)
+- **For Testing**: Validation criteria for whether the pot functions correctly
 
-含まれるべき情報：
-- ✅ API スキーマ（型、エンドポイント）
-- ✅ **ビジネスコンテキスト**（目的、責務、ドメイン）
-- ✅ **セマンティック情報**（意図、振る舞い、エッジケース）
-- ✅ 依存関係（なぜ依存するか）
-- ✅ パフォーマンス要件
-- ✅ 制約と不変条件
+What should be included:
+- ✅ API schema (types, endpoints)
+- ✅ **Business context** (purpose, responsibilities, domain)
+- ✅ **Semantic information** (intent, behavior, edge cases)
+- ✅ Dependencies (why dependencies exist)
+- ✅ Performance requirements
+- ✅ Constraints and invariants
 
-**理由:**
-- 明確な契約があれば、複数のAIエージェントが並列に実装しても整合性が保たれる
-- セマンティック情報（「なぜそうすべきか」）がないと、AIはハルシネーションを起こす
-- 1つの定義が3つの目的を果たす（DRY原則）
+**Rationale:**
+- With clear contracts, multiple AI agents can implement in parallel while maintaining consistency
+- Without semantic information ("why it should be so"), AI hallucinates
+- One definition serves three purposes (DRY principle)
 
-**重要:** OpenAPI や Protobuf だけでは不十分。型定義だけでなく、**ビジネス上の目的、振る舞いの意図、エッジケースでの期待動作**を含める必要がある。
+**Important:** OpenAPI or Protobuf alone is insufficient. Include not just type definitions, but **business purpose, behavioral intent, and expected behavior in edge cases**.
 
-### 1. Boundary is Domain（境界がドメイン）
+### 2. Boundary is Domain
 
-**壺は、アプリケーション全体の境界である。**
-**固体オブジェクト（ドメイン）は、その中で独立したマイクロサービスとなる。**
+**The pot is the boundary of the entire application.**
+**Solid objects (domains) become independent microservices within it.**
 
-**1つの壺（アプリケーション）= 複数の固体オブジェクト（ドメイン/マイクロサービス）**
+**One Pot (Application) = Multiple Solid Objects (Domains/Microservices)**
 
-各固体オブジェクト（ドメイン）には：
-- **ドメイン境界**: ビジネス上の概念の境界
-- **サービス境界**: 実装上の境界（マイクロサービス）
-- **コンテキスト境界**: AIが理解すべきスコープ
+Each solid object (domain) has:
+- **Domain boundary**: Boundary of business concepts
+- **Service boundary**: Implementation boundary (microservice)
+- **Context boundary**: Scope that AI should understand
 
-これらが一致することで：
-- ✅ 各ドメインの独立性が担保される
-- ✅ マイクロサービスが疎結合になる
-- ✅ AIが一度に理解できるスコープに収まる
-- ✅ 各ドメインは独立してテスト・デプロイ可能
+When these align:
+- ✅ Independence of each domain is ensured
+- ✅ Microservices become loosely coupled
+- ✅ Fits within the scope AI can understand at once
+- ✅ Each domain is independently testable and deployable
 
-**固体オブジェクト（ドメイン）のサイズ感:**
+**Size of Solid Objects (Domains):**
 ```
-小さすぎる固体（過度な分割）:
-  ❌ ドメインが細分化されすぎて、全体が複雑に
-  ❌ ネットワークオーバーヘッドが増える
-  ❌ ドメインロジックが分散してしまう
+Too small objects (excessive division):
+  ❌ Domains become too fragmented, complexity increases overall
+  ❌ Network overhead increases
+  ❌ Domain logic gets scattered
 
-適切なサイズの固体（1ドメイン = 1サービス）:
-  ✅ 明確なビジネス概念の境界
-  ✅ ドメインの独立性が担保される
-  ✅ AIが一度に理解できる
-  ✅ 独立してテスト・デプロイ可能
+Appropriately sized objects (1 domain = 1 service):
+  ✅ Clear business concept boundaries
+  ✅ Domain independence is ensured
+  ✅ AI can understand at once
+  ✅ Independently testable and deployable
 
-大きすぎる固体（複数ドメイン混在）:
-  ❌ ドメインの境界が曖昧
-  ❌ AIがコンテキストを失う
-  ❌ ハルシネーションが増える
-```
-
-**ドメインの見極め方:**
-- **ユビキタス言語**: そのドメイン固有の用語があるか
-- **独立性**: 他のドメインに依存せず変更できるか
-- **凝集性**: 関連する概念が1つにまとまっているか
-- **境界**: 明確な責務の境界があるか
-
-**例:**
-```
-❌ 悪い例: user-service に todo 管理機能も含める
-   → 1つの固体オブジェクトに複数のドメインが混在
-
-✅ 良い例（壺の中に複数の固体オブジェクト）:
-   壺（TODO アプリケーション）
-   ├─ User 固体（user-service）
-   ├─ TODO 固体（todo-service）
-   └─ Auth 固体（auth-service）
-   → それぞれ独立したドメイン/マイクロサービス
+Too large objects (multiple domains mixed):
+  ❌ Domain boundaries are ambiguous
+  ❌ AI loses context
+  ❌ Hallucinations increase
 ```
 
-**重要:** 各固体オブジェクト（ドメイン）の境界を正しく定義すれば、アプリケーション全体の独立性と保守性が向上する。
+**How to Identify Domains:**
+- **Ubiquitous language**: Does it have domain-specific terminology?
+- **Independence**: Can it change without depending on other domains?
+- **Cohesion**: Are related concepts grouped together?
+- **Boundary**: Is there a clear boundary of responsibilities?
 
-### 2. Parallel by Default（デフォルトで並列）
+**Example:**
+```
+❌ Bad example: Include TODO management in user-service
+   → Multiple domains mixed in one solid object
 
-サービス間の依存関係を明示的に管理し、可能な限り並列実装を行う。
-- 依存関係グラフの自動解析
-- 独立したサービスは同時に複数のAIエージェントで実装
-- オーケストレーターによる進捗管理
-- 実装中のサービスが互いに干渉しない
+✅ Good example (multiple solid objects in a pot):
+   Pot (TODO Application)
+   ├─ User solid (user-service)
+   ├─ TODO solid (todo-service)
+   └─ Auth solid (auth-service)
+   → Each is an independent domain/microservice
+```
 
-**理由:**
-- 開発速度の劇的な向上（従来の3-5倍）
-- 開発者の待ち時間の最小化
-- AIエージェントの効率的な活用
+**Important:** If you correctly define the boundaries of each solid object (domain), the independence and maintainability of the entire application improves.
 
-### 3. Verify Continuously（継続的な検証）
+### 3. Parallel by Default
 
-実装と同時に、自動的に検証を行う。特に **Contract-driven Testing（CDT）** を核心とする。
-- **契約テスト（Contract Testing）**: Contractで定義された仕様への適合性をチェック
-- 型安全性チェック: Go/Rustの型システムを活用
-- 統合テスト: サービス間の相互作用を検証
-- パフォーマンステスト: 契約で定義されたSLAを満たすか確認
-- セキュリティスキャン: 脆弱性の早期発見
+Explicitly manage dependencies between services and implement in parallel whenever possible.
+- Automatic analysis of dependency graphs
+- Independent services implemented simultaneously by multiple AI agents
+- Progress management by orchestrator
+- Services under implementation don't interfere with each other
 
-**理由:**
-- AIが生成したコードの品質を保証
-- ハルシネーションによるバグを早期に検出
-- リグレッションの防止
-- 人間のレビュー負荷を軽減
+**Rationale:**
+- Dramatic improvement in development speed (3-5x faster than traditional)
+- Minimize developer wait time
+- Efficient use of AI agents
 
-### 4. Go-First, Language-Agnostic Interface（Go優先、言語非依存のインターフェース）
+### 4. Verify Continuously
 
-**Contract定義は言語非依存、実装はGo言語を推奨。**
+Verify automatically while implementing. Especially **Contract-Driven Testing (CDT)** as the core.
+- **Contract Testing**: Check conformance to Contract-defined specifications
+- Type safety checks: Leverage Go/Rust type systems
+- Integration tests: Verify interactions between services
+- Performance tests: Confirm SLAs defined in contracts are met
+- Security scans: Early detection of vulnerabilities
 
-- Contract定義: 言語非依存（YAML）
-- OpenAPI/Protobuf との互換性
-- **推奨実装言語: Go**
-- 将来的に TypeScript, Python もサポート
+**Rationale:**
+- Ensure quality of AI-generated code
+- Early detection of bugs from hallucinations
+- Prevent regressions
+- Reduce human review burden
 
-**なぜ Go言語なのか:**
-- ✅ **誰が書いても同じコードになる** → AIのハルシネーション最小化
-- ✅ シンプルな言語仕様 → AIが理解しやすい
-- ✅ 明示的なエラーハンドリング → 見落とし防止
-- ✅ 標準フォーマット（gofmt） → コードスタイル統一
-- ✅ マイクロサービスのエコシステム
+### 5. Go-First, Language-Agnostic Interface
 
-**詳細は [WHY_GO.md](./docs/WHY_GO.md) を参照。**
+**Contract definitions are language-agnostic, Go language recommended for implementation.**
 
-**アーキテクチャの統一:**
+- Contract definition: Language-agnostic (YAML)
+- Compatible with OpenAPI/Protobuf
+- **Recommended implementation language: Go**
+- Future support for TypeScript, Python
+
+**Why Go language:**
+- ✅ **Same code regardless of who writes it** → Minimize AI hallucinations
+- ✅ Simple language specification → Easy for AI to understand
+- ✅ Explicit error handling → Prevent oversights
+- ✅ Standard formatting (gofmt) → Unified code style
+- ✅ Microservices ecosystem
+
+**See [WHY_GO.md](./WHY_GO.md) for details.**
+
+**Architecture Unification:**
 - Orchestrator: Go
-- Validator: Go（当初はRustを検討したが、統一のためGoに）
-- 生成サービス: Go（推奨）
+- Validator: Go (initially considered Rust, but unified to Go)
+- Generated services: Go (recommended)
 - CLI: Go
 
-## 何を作るのか
+## What We're Building
 
-### コア コンポーネント
+### Core Components
 
 #### 1. Tsubo Contract Format
-マイクロサービスを定義するための、セマンティック情報を含んだContract定義フォーマット。
+Contract definition format including semantic information for defining microservices.
 
-**詳細は [CONTRACT_DESIGN.md](./docs/CONTRACT_DESIGN.md) を参照。**
+**See [CONTRACT_DESIGN.md](./CONTRACT_DESIGN.md) for details.**
 
-Contract は単なるAPI定義ではなく：
-- OpenAPI/Protobuf の良い部分を継承
-- ビジネスコンテキスト、意図、振る舞いを記述
-- AIが理解しやすい構造化された形式
-- 人間が読んで理解しやすい
+Contracts are not just API definitions:
+- Inherit the good parts of OpenAPI/Protobuf
+- Describe business context, intent, and behavior
+- Structured format that AI can easily understand
+- Human-readable and understandable
 
 ```yaml
-# 例: user-service.tsubo.yaml
+# Example: user-service.tsubo.yaml
 service:
   name: user-service
-  description: ユーザー管理サービス
+  description: User management service
 
 interface:
   api:
@@ -342,118 +342,118 @@ types:
     email: string
 
 tests:
-  - name: ユーザー作成テスト
-    given: 有効なユーザーデータ
+  - name: User creation test
+    given: Valid user data
     when: POST /users
     then: 201 Created
 ```
 
-#### 2. Orchestrator（オーケストレーター）
-複数のAIエージェントを管理し、並列実装を調整する。
+#### 2. Orchestrator
+Manages multiple AI agents and coordinates parallel implementation.
 
-**機能:**
-- サービス定義の解析
-- 依存関係グラフの構築
-- AIエージェントへのタスク配分
-- 実装進捗の監視
-- 統合・デプロイの自動化
+**Features:**
+- Parse service definitions
+- Build dependency graphs
+- Distribute tasks to AI agents
+- Monitor implementation progress
+- Automate integration and deployment
 
-#### 3. Validator（検証エンジン）
-生成されたコードを自動的に検証する。
+#### 3. Validator (Verification Engine)
+Automatically verifies generated code.
 
-**機能:**
-- 契約適合性のチェック
-- 型安全性の検証
-- テストの自動実行
-- パフォーマンス測定
-- セキュリティスキャン
+**Features:**
+- Check contract compliance
+- Verify type safety
+- Automatic test execution
+- Performance measurement
+- Security scanning
 
-#### 4. Template System（テンプレートシステム）
-各言語・フレームワーク向けのベストプラクティステンプレート。
+#### 4. Template System
+Best practice templates for each language/framework.
 
-**機能:**
-- サービスの初期構造生成
-- ボイラープレートコードの自動生成
-- ベストプラクティスの組み込み
-- カスタムテンプレートのサポート
+**Features:**
+- Generate initial service structure
+- Auto-generate boilerplate code
+- Embed best practices
+- Support custom templates
 
 #### 5. CLI Tool
-開発者が Tsubo を操作するためのコマンドラインツール。
+Command-line tool for developers to operate Tsubo.
 
 ```bash
-# 新しいサービスを定義
+# Define a new service
 tsubo new user-service
 
-# サービス定義から実装を生成（AI駆動）
+# Generate implementation from service definition (AI-driven)
 tsubo build user-service
 
-# 全サービスを並列ビルド
+# Build all services in parallel
 tsubo build --all --parallel
 
-# 検証の実行
+# Run verification
 tsubo verify
 
-# サービスの起動
+# Start services
 tsubo run
 ```
 
-## 目指すもの
+## Goals
 
-### 短期目標（MVP）
-- [ ] Tsubo Contract Format の仕様策定
-- [ ] Contract バリデーター（Go実装）
-- [ ] 基本的なオーケストレーター（Go実装）
-- [ ] AI プロンプト生成エンジン
-- [ ] Go サービステンプレート
-- [ ] CLI ツール（`tsubo new`, `tsubo build`, `tsubo verify`）
-- [ ] デモアプリケーション（3-5のマイクロサービス）
+### Short-term Goals (MVP)
+- [x] Tsubo Contract Format specification
+- [x] Contract validator (Go implementation)
+- [x] Basic orchestrator (Go implementation)
+- [x] AI prompt generation engine
+- [x] Go service templates
+- [x] CLI tool (`tsubo new`, `tsubo build`, `tsubo verify`)
+- [x] Demo application (2 microservices)
 
-### 中期目標
-- [ ] 複数AIプロバイダーのサポート（Claude, GPT-4, etc.）
-- [ ] より多くの言語テンプレート（TypeScript, Python, etc.）
+### Mid-term Goals
+- [ ] Support multiple AI providers (Claude, GPT-4, etc.)
+- [ ] More language templates (TypeScript, Python, etc.)
 - [ ] Web UI for orchestration
-- [ ] リアルタイム監視ダッシュボード
-- [ ] プラグインシステム
+- [ ] Real-time monitoring dashboard
+- [ ] Plugin system
 
-### 長期目標
-- [ ] AI駆動開発のデファクトスタンダード
-- [ ] エンタープライズ対応（認証、監査、等）
-- [ ] クラウドネイティブ統合（K8s, Service Mesh, etc.）
-- [ ] エコシステムの形成（コミュニティテンプレート、etc.）
+### Long-term Goals
+- [ ] De facto standard for AI-driven development
+- [ ] Enterprise support (authentication, auditing, etc.)
+- [ ] Cloud-native integration (K8s, Service Mesh, etc.)
+- [ ] Ecosystem formation (community templates, etc.)
 
-## 成功の指標
+## Success Metrics
 
-1. **開発速度:** 従来の3-5倍の速度でマイクロサービスを実装できる
-2. **品質:** AIが生成したコードのバグ率を50%以上削減
-3. **並列度:** 平均して5-10のサービスを同時に実装できる
-4. **学習曲線:** 新しい開発者が1日以内に productive になれる
+1. **Development Speed:** Implement microservices 3-5x faster than traditional methods
+2. **Quality:** Reduce bug rate of AI-generated code by 50%+
+3. **Parallelism:** Implement 5-10 services simultaneously on average
+4. **Learning Curve:** New developers become productive within one day
 
-## 非目標（やらないこと）
+## Non-Goals (What We Won't Do)
 
-Tsubo は以下を目指さない：
+Tsubo does NOT aim for:
 
-- ❌ **ランタイムオーケストレーション**: Kubernetes、Service Mesh、API Gatewayの代替ではない
-  - Tsubo は**開発時のツール**であり、実行時のインフラではない
-  - 生成されたサービスは、任意のランタイム環境で動作する
+- ❌ **Runtime orchestration**: Not a replacement for Kubernetes, Service Mesh, or API Gateway
+  - Tsubo is a **development-time tool**, not runtime infrastructure
+  - Generated services run in any runtime environment
 
-- ❌ **完全な自動化**: 人間のレビューを排除しない
-  - AIが生成したコードは、必ず人間がレビューする
-  - Contract定義も人間が作成・レビューする
-  - Tsubo は開発を加速するが、開発者を置き換えるものではない
+- ❌ **Complete automation**: Don't eliminate human review
+  - AI-generated code must always be reviewed by humans
+  - Contract definitions are also created and reviewed by humans
+  - Tsubo accelerates development but doesn't replace developers
 
-- ❌ **モノリシックアプリケーションのサポート**: 境界のないコードベースには適用しない
-  - ただし、モノリスを段階的にサービスに分割することは支援する
+- ❌ **Monolithic application support**: Not applicable to codebases without boundaries
+  - However, supports gradual migration from monolith to services
 
-- ❌ **全ての言語・フレームワークのサポート**: 初期は Go に集中
-  - 将来的には TypeScript、Python などに拡張
-  - ただし、Contract定義は言語非依存
-  - Go は推奨言語として位置づけ
+- ❌ **Support all languages/frameworks**: Initial focus on Go
+  - Future expansion to TypeScript, Python, etc.
+  - However, Contract definitions are language-agnostic
+  - Go positioned as recommended language
 
-- ❌ **既存のContract定義フォーマットの完全な置き換え**: OpenAPI/Protobuf を拡張する
-  - 既存ツールとの互換性を維持
-  - 段階的な採用を可能にする
+- ❌ **Complete replacement of existing Contract formats**: Extend OpenAPI/Protobuf
+  - Maintain compatibility with existing tools
+  - Enable gradual adoption
 
 ---
 
-> "壺（Tsubo）は小さな空間だが、その集合が美しい庭園を作る。
-> 同様に、小さなマイクロサービスの集合が、堅牢なシステムを作る。"
+> "Tsubo (pot) is a small space, but its collection creates a beautiful garden.
+> Similarly, a collection of small microservices creates a robust system."

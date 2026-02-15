@@ -1,375 +1,394 @@
-# ドメイン設計ガイド
+# Tsubo Domain Design
 
-## Tsubo におけるドメインの役割
+## The Pot and Solid Objects Metaphor
 
-### 核心原則
-
-**1つの壺 = 1つの固体オブジェクト（ドメイン）= 1つのマイクロサービス**
-
-**ドメインは、壺の中に入れる固体オブジェクトである。**
+### Core Concept
 
 ```
 ┌─────────────────────────────────────────┐
-│           システム全体                   │
+│   Tsubo (Pot) = Application             │  ← Humans define
 │                                         │
-│  ┌─────────┐  ┌─────────┐  ┌─────────┐ │
-│  │  壺 1   │  │  壺 2   │  │  壺 3   │ │
-│  │  [User] │  │ [TODO]  │  │ [Auth]  │ │ ← 固体オブジェクト
-│  │  固体   │  │  固体   │  │  固体   │ │
-│  └─────────┘  └─────────┘  └─────────┘ │
-│       ↓             ↓             ↓     │
-│  user-service  todo-service  auth-service│
+│  ┌──────────┐  ┌──────────┐            │
+│  │  TODO    │  │   User   │   ...      │  ← Solid Objects
+│  │  Domain  │  │  Domain  │            │     (Microservices)
+│  └──────────┘  └──────────┘            │
+│                                         │
 └─────────────────────────────────────────┘
 
-壺 = 容器（境界）
-固体オブジェクト = ドメイン（具体的なビジネス概念）
+One Pot (Application) = Multiple Solid Objects (Domains/Microservices)
 ```
 
-## ドメインとは何か
+### Physical Analogy
 
-### ドメインの定義
+**The Pot (Tsubo):**
+- Container representing the entire application
+- Humans define its shape (boundaries, interfaces)
+- Holds multiple solid objects
 
-**ドメイン（Domain）** とは：
+**Solid Objects (Domains):**
+- Tangible business concepts
+- Each becomes one microservice
+- Independent and self-contained
+- AI implements their internals
 
-**壺の中に入れる固体オブジェクトである。**
+## Domain Identification
 
-より具体的には：
-- ビジネス上の概念の境界
-- 固有のユビキタス言語を持つ領域
-- 独立して変更・進化できる単位
-- **触れることができる、具体的な概念**
+### What is a Domain?
 
-### 物理的なイメージ
+A domain is a **tangible business concept** with:
+- ✅ **Clear boundaries**: Well-defined responsibilities
+- ✅ **Ubiquitous language**: Domain-specific terminology
+- ✅ **Independence**: Can change without affecting others
+- ✅ **Cohesion**: Related concepts grouped together
+
+### Examples
+
+#### Good Domain Separation
 
 ```
-壺（容器）
-  │
-  ├─ 形: マイクロサービスの境界
-  │
-  └─ 中身: 固体オブジェクト（ドメイン）
-         │
-         ├─ 表面: インターフェース（Contract）
-         │
-         └─ 内部: 実装（AIが決める）
-
-例:
-- TODO という固体オブジェクトを todo-service という壺に入れる
-- User という固体オブジェクトを user-service という壺に入れる
+✅ TODO Application (Pot)
+├─ User Domain → user-service
+│  - User registration
+│  - User authentication
+│  - User profile management
+│
+├─ TODO Domain → todo-service
+│  - TODO creation
+│  - TODO management
+│  - TODO status tracking
+│
+└─ Notification Domain → notification-service
+   - Email notifications
+   - Push notifications
+   - Notification preferences
 ```
 
-### Tsubo におけるドメインの特徴
+Each domain:
+- Has clear business purpose
+- Uses domain-specific language
+- Is independently deployable
+- Maintains its own data
 
-1. **固体性**: 具体的で触れることができる概念
-2. **独立性**: 他のドメイン（オブジェクト）に依存せず動作する
-3. **凝集性**: 関連する概念が1つにまとまっている
-4. **明確な境界**: 何が含まれ、何が含まれないかが明確
-5. **ユビキタス言語**: そのドメイン固有の用語がある
+#### Bad Domain Separation
 
-## ドメイン境界の見極め方
+```
+❌ Mixed Responsibilities
+└─ app-service (Everything in one service)
+   - User management + TODO management + Notifications
+   → Multiple domains mixed, no clear boundaries
+```
 
-### 良いドメイン分割の指標
+## Domain Size Guidelines
 
-#### ✅ 明確なビジネス概念がある
+### Too Small (Over-fragmentation)
+
+```
+❌ Excessive Division
+├─ user-creation-service
+├─ user-authentication-service
+├─ user-profile-service
+└─ user-deletion-service
+
+Problems:
+- Domain logic scattered
+- Increased network overhead
+- Complex orchestration
+- Hard for AI to understand the big picture
+```
+
+### Appropriate Size
+
+```
+✅ Balanced Domain
+└─ user-service
+   ├─ User creation
+   ├─ User authentication
+   ├─ User profile management
+   └─ User deletion
+
+Benefits:
+- Clear business boundary
+- Domain independence
+- AI can understand at once
+- Single deployment unit
+```
+
+### Too Large (Multiple Domains)
+
+```
+❌ Multiple Domains Mixed
+└─ application-service
+   ├─ User management
+   ├─ TODO management
+   ├─ Notifications
+   └─ Analytics
+
+Problems:
+- Unclear boundaries
+- AI loses context
+- Increased hallucinations
+- Tight coupling
+```
+
+## Identifying Domain Boundaries
+
+### 1. Ubiquitous Language Test
+
+Does the domain have its own vocabulary?
+
+```
+✅ User Domain:
+- User, Registration, Authentication, Profile
+- Login, Logout, Password Reset
+
+✅ TODO Domain:
+- TODO, Task, Completion, Status
+- Due Date, Priority, Assignment
+```
+
+### 2. Independence Test
+
+Can this domain change without affecting others?
+
+```
+✅ Independent:
+- Changing TODO status logic doesn't affect User domain
+- Adding notification types doesn't affect TODO domain
+
+❌ Dependent:
+- Changing user authentication affects all domains
+- → Indicates tight coupling, needs restructuring
+```
+
+### 3. Cohesion Test
+
+Are related concepts grouped together?
+
+```
+✅ High Cohesion (User Domain):
+- User registration
+- User authentication
+- User profile
+→ All related to "User" concept
+
+❌ Low Cohesion:
+- User registration
+- Email sending
+- Payment processing
+→ Unrelated concepts mixed
+```
+
+### 4. Data Ownership Test
+
+Does this domain own specific data?
+
+```
+✅ Clear Ownership:
+- User domain owns user data
+- TODO domain owns todo data
+- Each has its own database
+
+❌ Shared Ownership:
+- Multiple services modifying same user table
+- → Indicates poor domain separation
+```
+
+## Domain Relationships
+
+### 1. Independent Domains (No Dependencies)
+
+```
+User Domain  ←→  Independent
+TODO Domain  ←→  Independent
+```
+
+**Characteristic:**
+- Can be implemented in parallel
+- No coordination needed
+- Wave 0 in implementation plan
+
+### 2. Dependent Domains
+
+```
+User Domain  →  TODO Domain
+    (Wave 0)        (Wave 1)
+```
+
+**Characteristic:**
+- TODO depends on User
+- Must implement User first
+- Sequential implementation
+
+### 3. Circular Dependencies (Anti-pattern)
+
+```
+❌ User Domain  ⇄  TODO Domain
+
+This indicates:
+- Poor domain separation
+- Needs redesign
+- Tsubo will detect and warn
+```
+
+## Domain-to-Service Mapping
+
+### One Domain = One Service
+
+**Principle:**
+```
+Domain  →  Microservice  →  Docker Container
+
+User Domain → user-service → user-service:8080
+TODO Domain → todo-service → todo-service:8081
+```
+
+**Benefits:**
+- Clear 1:1 mapping
+- Easy to understand
+- Simple deployment
+- AI-friendly scope
+
+### Contract per Domain
+
+Each domain has one Contract (`.object.yaml`):
 
 ```yaml
-# 良い例: TODO ドメイン
-domain: task-management
-concepts:
-  - TODO アイテム
-  - ステータス（pending/completed）
-  - タスクの優先度
-  - 期限
-
-# 悪い例: data-service
-domain: generic-data
-concepts:
-  - データ（何のデータ？）
-  - エンティティ（何のエンティティ？）
-```
-
-#### ✅ ユビキタス言語がある
-
-```
-TODO ドメインの言語:
-- タスク、TODO アイテム
-- 完了する、未完了
-- 期限、優先度
-
-User ドメインの言語:
-- ユーザー、アカウント
-- サインアップ、ログイン
-- プロフィール、設定
-```
-
-#### ✅ 独立して変更できる
-
-```
-TODO ドメインの変更例:
-- ステータスに "in-progress" を追加
-- 優先度フィールドを追加
-- サブタスク機能を追加
-
-→ User ドメインに影響を与えない
-→ 独立してデプロイ可能
-```
-
-### 悪いドメイン分割のアンチパターン
-
-#### ❌ 技術層による分割
-
-```
-# 悪い例
-- api-service
-- database-service
-- cache-service
-
-→ ビジネス概念ではなく技術層で分割
-→ 変更時に複数サービスの修正が必要
-```
-
-#### ❌ CRUD による分割
-
-```
-# 悪い例
-- create-service
-- read-service
-- update-service
-- delete-service
-
-→ 操作で分割、ドメインの境界が不明確
-→ ビジネスロジックが分散
-```
-
-#### ❌ 過度な細分化
-
-```
-# 悪い例
-- user-create-service
-- user-read-service
-- user-update-service
-- user-delete-service
-
-→ 1つの User ドメインを不必要に分割
-→ ネットワークオーバーヘッドが増大
-```
-
-## ドメイン設計のプロセス
-
-### Step 1: ビジネス概念の抽出
-
-```
-例: TODO アプリケーション
-
-ビジネス概念:
-1. タスク管理 → TODO ドメイン
-2. ユーザー管理 → User ドメイン
-3. 認証・認可 → Auth ドメイン
-4. 通知 → Notification ドメイン
-```
-
-### Step 2: ドメイン境界の定義
-
-```yaml
-# TODO ドメイン
-domain_boundary:
-  included:
-    - TODO の CRUD 操作
-    - ステータス管理
-    - フィルタリング、検索
-
-  excluded:
-    - ユーザー情報の管理（User ドメイン）
-    - 認証トークンの発行（Auth ドメイン）
-    - メール通知（Notification ドメイン）
-```
-
-### Step 3: ドメイン間の依存関係の明確化
-
-```yaml
-# TODO ドメインの依存関係
-dependencies:
-  services:
-    - name: auth-service
-      reason: TODO の作成者を識別するため
-      type: authentication
-
-    - name: notification-service
-      reason: TODO 完了時に通知を送る
-      type: optional  # 通知失敗しても TODO 操作は成功
-```
-
-### Step 4: Contract の定義
-
-```yaml
+# user-service.object.yaml
 service:
-  name: todo-service
-  domain: task-management
+  name: user-service
+  description: User domain management
 
-  context:
-    domain_boundary: |
-      【含む】
-      - TODO の CRUD
-      - ステータス管理
-
-      【含まない】
-      - ユーザー管理
-      - 認証・認可
+# Defines everything about User domain:
+# - API endpoints
+# - Data models
+# - Business rules
+# - Dependencies
 ```
 
-## ドメインとマイクロサービスの対応
+## Example: TODO Application Design
 
-### 基本原則
-
-```
-1つのドメイン → 1つの Contract → 1つのマイクロサービス
-```
-
-### 具体例
-
-#### TODO アプリケーションの全体像
-
-```
-┌─────────────────────────────────────────────┐
-│          TODO アプリケーション               │
-└─────────────────────────────────────────────┘
-              │
-    ┌─────────┼─────────┬─────────┐
-    │         │         │         │
-    ▼         ▼         ▼         ▼
-┌────────┐┌────────┐┌────────┐┌────────┐
-│  User  ││  TODO  ││  Auth  ││ Notify │
-│ Domain ││ Domain ││ Domain ││ Domain │
-└────────┘└────────┘└────────┘└────────┘
-    │         │         │         │
-    ▼         ▼         ▼         ▼
-┌────────┐┌────────┐┌────────┐┌────────┐
-│  user  ││  todo  ││  auth  ││ notify │
-│-service││-service││-service││-service│
-└────────┘└────────┘└────────┘└────────┘
-```
-
-#### 各ドメインの責務
+### Application (Pot)
 
 ```yaml
-# User ドメイン
-responsibilities:
-  - ユーザーの CRUD
-  - プロフィール管理
-  - アカウント設定
+# tsubo-todo-app.tsubo.yaml
+tsubo:
+  name: tsubo-todo-app
+  description: TODO management application
 
-# TODO ドメイン
-responsibilities:
-  - TODO の CRUD
-  - ステータス管理
-  - タスクのフィルタリング
+objects:
+  - name: user-service
+    contract: ./user-service.object.yaml
 
-# Auth ドメイン
-responsibilities:
-  - 認証トークンの発行
-  - トークンの検証
-  - セッション管理
-
-# Notification ドメイン
-responsibilities:
-  - メール送信
-  - プッシュ通知
-  - 通知設定の管理
+  - name: todo-service
+    contract: ./todo-service.object.yaml
+    dependencies:
+      - user-service
 ```
 
-## ドメイン独立性のメリット
+### Domains (Solid Objects)
 
-### 1. 並列開発が可能
+**User Domain:**
+- **Purpose**: Manage users
+- **Responsibilities**: Registration, authentication, profiles
+- **Data**: Users table
+- **API**: `/users/*` endpoints
 
-```
-複数のドメインを同時に開発:
-- チーム A: User ドメイン
-- チーム B: TODO ドメイン
-- チーム C: Auth ドメイン
+**TODO Domain:**
+- **Purpose**: Manage tasks
+- **Responsibilities**: Create, update, complete TODOs
+- **Data**: TODOs table
+- **API**: `/todos/*` endpoints
+- **Dependencies**: User service (to verify user ownership)
 
-→ 互いに影響を与えずに開発できる
-```
-
-### 2. 独立したデプロイ
-
-```
-TODO ドメインの変更:
-- todo-service のみデプロイ
-- 他のサービスは影響を受けない
-- ダウンタイムなし
-```
-
-### 3. スケーラビリティ
+### Dependency Graph
 
 ```
-TODO サービスの負荷が高い場合:
-- todo-service のみスケールアウト
-- 他のサービスは現状維持
-- コスト効率が良い
+Wave 0: user-service (no dependencies)
+Wave 1: todo-service (depends on user-service)
 ```
 
-### 4. 技術スタックの柔軟性
+## Best Practices
+
+### 1. Start with Domains, Not Services
+
+❌ **Bad:** "Let's create a REST API service"
+✅ **Good:** "We need a User domain for managing users"
+
+### 2. Use Business Language
+
+❌ **Bad:** data-service, api-service, controller-service
+✅ **Good:** user-service, todo-service, notification-service
+
+### 3. One Database per Domain
 
 ```
-各ドメインで最適な技術を選択:
-- user-service: Go（シンプル、高速）
-- todo-service: Go（AI 駆動開発に最適）
-- notification-service: Python（メールライブラリが豊富）
+✅ Good:
+├─ user-service → user_db
+└─ todo-service → todo_db
+
+❌ Bad:
+├─ user-service ─┐
+└─ todo-service ─┴→ shared_db
 ```
 
-## チェックリスト
+### 4. Define Clear Interfaces
 
-### ドメイン設計時
+```yaml
+# User domain interface
+api:
+  - GET /users/{id}
+  - POST /users
+  - PUT /users/{id}
 
-- [ ] 明確なビジネス概念があるか
-- [ ] ユビキタス言語が定義されているか
-- [ ] 他のドメインと独立して変更できるか
-- [ ] ドメイン境界が明確か（含む/含まないが定義されているか）
-- [ ] 過度に細分化されていないか
-- [ ] 技術層ではなくビジネス概念で分割されているか
-
-### Contract 定義時
-
-- [ ] `domain` フィールドが設定されているか
-- [ ] `domain_boundary` が明確に定義されているか
-- [ ] 他のドメインへの依存関係が明示されているか
-- [ ] そのドメイン固有の責務が記述されているか
-
-## まとめ
-
-**Tsubo における ドメイン = 壺 の関係:**
-
-```
-壺 = 容器（境界、マイクロサービス）
-  ↓
-固体オブジェクト = ドメイン（具体的なビジネス概念）
-  ↓
-内部構造 = 実装（AIが決める）
-
-1つの壺 = 1つの固体オブジェクト（ドメイン）= 1つのマイクロサービス
+# TODO domain interface
+api:
+  - GET /todos
+  - POST /todos
+  - PUT /todos/{id}
 ```
 
-**各固体オブジェクト（ドメイン）は:**
-- ✅ 独立している
-- ✅ 明確な境界を持つ
-- ✅ ビジネス概念に基づいている
-- ✅ 触れることができる具体的な概念
-- ✅ 独立してテスト・デプロイできる
+## Anti-Patterns
 
-**ドメイン（固体オブジェクト）の独立性が、システム全体の保守性と拡張性を決定します。**
+### 1. God Service
 
-### 壺のメタファーが示すもの
+❌ One service doing everything
+✅ Multiple focused domains
 
+### 2. Chatty Services
+
+❌ Too many inter-service calls
+✅ Proper domain boundaries reduce chattiness
+
+### 3. Data Coupling
+
+❌ Services sharing database tables
+✅ Each service owns its data
+
+### 4. Circular Dependencies
+
+❌ Services depending on each other
+✅ Unidirectional dependencies only
+
+## Validation
+
+Tsubo automatically validates domain design:
+
+```bash
+tsubo build app.tsubo.yaml
+
+# Checks:
+# - Circular dependencies (error)
+# - Missing dependencies (error)
+# - Duplicate service names (error)
+# - Optimal domain size (warning)
 ```
-物理的な壺:
-- 壺（容器）に固体を入れる
-- 固体は壺の形に影響されるが、その内部構造は独立
 
-Tsubo:
-- 壺（マイクロサービス）にドメイン（固体オブジェクト）を入れる
-- ドメインは Contract（壺の形）に影響されるが、実装の詳細は独立
-- AIがオブジェクトの内部構造を作る
-```
+## See Also
+
+- [PHILOSOPHY.md](./PHILOSOPHY.md) - The pot metaphor
+- [CONTRACT_DESIGN.md](./CONTRACT_DESIGN.md) - How to define domains
+- [DEVELOPMENT_PRINCIPLES.md](./DEVELOPMENT_PRINCIPLES.md) - Development workflow
 
 ---
 
-参考: Domain-Driven Design (DDD), Bounded Context
+> "Good domains are like LEGO blocks: independent, composable, and fit together perfectly."

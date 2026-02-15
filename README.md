@@ -346,15 +346,18 @@ tsubo run (起動)
 
 ## ドキュメント
 
+**言語 / Language:**
+- 🇺🇸 [English (Master)](./docs/) - AI implementation uses English docs
+- 🇯🇵 [日本語](./docs/ja/) - Japanese documentation
+
 ### 核心思想
-- [設計思想（PHILOSOPHY.md）](./docs/PHILOSOPHY.md) - Tsubo の核心的な考え方
-- [ドメイン設計（DOMAIN_DESIGN.md）](./docs/DOMAIN_DESIGN.md) - 壺と固体オブジェクトの関係
+- [PHILOSOPHY.md](./docs/PHILOSOPHY.md) ([日本語](./docs/ja/PHILOSOPHY.md)) - Tsubo の核心的な考え方
+- [DOMAIN_DESIGN.md](./docs/DOMAIN_DESIGN.md) ([日本語](./docs/ja/DOMAIN_DESIGN.md)) - 壺と固体オブジェクトの関係
 
 ### 開発ガイド
-- [開発原則（DEVELOPMENT_PRINCIPLES.md）](./docs/DEVELOPMENT_PRINCIPLES.md) - Docker First & 質疑のタイミング
-- [Contract 設計（CONTRACT_DESIGN.md）](./docs/CONTRACT_DESIGN.md) - Contract フォーマットの詳細
-- [ファイルフォーマット（docs/FILE_FORMATS.md）](./docs/FILE_FORMATS.md) - .tsubo.yaml と .object.yaml
-- [なぜ Go 言語か（WHY_GO.md）](./docs/WHY_GO.md) - Go 言語選択の理由
+- [DEVELOPMENT_PRINCIPLES.md](./docs/DEVELOPMENT_PRINCIPLES.md) ([日本語](./docs/ja/DEVELOPMENT_PRINCIPLES.md)) - Docker First & 質疑のタイミング
+- [CONTRACT_DESIGN.md](./docs/CONTRACT_DESIGN.md) ([日本語](./docs/ja/CONTRACT_DESIGN.md)) - Contract フォーマットの詳細
+- [WHY_GO.md](./docs/WHY_GO.md) ([日本語](./docs/ja/WHY_GO.md)) - Go 言語選択の理由
 
 ### CLI コマンド
 - **tsubo** - 統一コマンドラインインターフェース

@@ -1,299 +1,298 @@
-# Tsubo 開発原則
+# Tsubo Development Principles
 
-## 🎯 核心原則
+## 🎯 Core Principles
 
-### 1. 仮想環境必須（Docker First）
+### 1. Docker First (Virtual Environment Required)
 
-**すべての実装は仮想環境（Docker）で実行する。**
+**All implementations must run in a virtual environment (Docker).**
 
-#### 理由
-- ✅ **ローカル環境への影響ゼロ**: 依存関係、ポート、プロセスがホストに影響しない
-- ✅ **再現性の保証**: どの環境でも同じ動作
-- ✅ **依存関係の隔離**: ライブラリやツールのバージョンを固定
-- ✅ **クリーンアップが容易**: `docker-compose down` で完全に削除
+#### Rationale
+- ✅ **Zero impact on local environment**: Dependencies, ports, processes don't affect host
+- ✅ **Reproducibility guarantee**: Same behavior in any environment
+- ✅ **Dependency isolation**: Lock library and tool versions
+- ✅ **Easy cleanup**: Complete removal with `docker-compose down`
 
-#### 実装ルール
+#### Implementation Rules
 ```bash
-# すべてのサービスは Docker Compose で起動
+# All services start with Docker Compose
 docker-compose up -d
 
-# 開発・テスト・実行はすべて Docker 内で完結
+# Development, testing, execution all within Docker
 docker-compose exec service-name <command>
 
-# 終了時は完全にクリーンアップ
+# Complete cleanup on exit
 docker-compose down
 ```
 
-### 2. 質疑のタイミング
+### 2. Questioning Timing
 
-**実装前（Contract段階）のみ質疑を行い、実装中は自律的に進める。**
+**Ask questions only before implementation (Contract phase), proceed autonomously during implementation.**
 
-#### 質疑が許される場面
+#### When Questions Are Allowed
 
-**実装開始前:**
-- ✅ **Contract定義の曖昧性を排除する質問**
-  - 例: "このフィールドが `null` になるのはどんな場合ですか？"
-  - 例: "同時実行時の振る舞いは？"
-  - 例: "エラー時のロールバックは必要ですか？"
+**Before Implementation:**
+- ✅ **Questions to eliminate Contract ambiguities**
+  - Example: "When does this field become `null`?"
+  - Example: "Behavior during concurrent execution?"
+  - Example: "Is rollback needed on error?"
 
-- ✅ **セキュリティ的欠陥の指摘**
-  - 例: "このエンドポイントは認証が必要では？"
-  - 例: "パスワードのハッシュ化は？"
-  - 例: "SQLインジェクションのリスクがあります"
+- ✅ **Security vulnerability indicators**
+  - Example: "Does this endpoint require authentication?"
+  - Example: "Password hashing?"
+  - Example: "Risk of SQL injection"
 
-- ✅ **ローカル環境への影響確認**
-  - 例: "ポート8080を使用しますが、問題ありませんか？"
-  - 例: "新しいDockerイメージをpullしますが、よろしいですか？"
+- ✅ **Local environment impact confirmation**
+  - Example: "Using port 8080, is this okay?"
+  - Example: "Will pull new Docker image, is this acceptable?"
 
-**実装中:**
-- ❌ **実装の詳細に関する質問は行わない**
-  - 例: "この処理はどのパターンで実装しますか？" → AI が自律的に決定
-  - 例: "エラーハンドリングはどうしますか？" → Contract に従って実装
-  - 例: "ファイル構成はどうしますか？" → ベストプラクティスに従う
+**During Implementation:**
+- ❌ **No questions about implementation details**
+  - Example: "Which pattern to use for this process?" → AI decides autonomously
+  - Example: "How to handle errors?" → Implement according to Contract
+  - Example: "How to structure files?" → Follow best practices
 
-### 3. Contract is Everything（契約がすべて）
+### 3. Contract is Everything
 
-**Contract は実装の唯一の真実（Single Source of Truth）である。**
+**Contract is the Single Source of Truth for implementation.**
 
-#### Contract に含まれるべき情報
+#### What Should Be Included in Contracts
 
 ```yaml
 service:
   context:
     purpose: |
-      このサービスの目的とビジネス上の意図
+      Purpose and business intent of this service
     responsibilities:
-      - 具体的な責務1
-      - 具体的な責務2
+      - Specific responsibility 1
+      - Specific responsibility 2
     constraints:
-      - 制約1
-      - 制約2
+      - Constraint 1
+      - Constraint 2
 
 api:
   endpoints:
     - semantics:
-        intent: この操作の意図
+        intent: Intent of this operation
         behavior:
-          success: 正常時の振る舞い
+          success: Behavior on success
           edge_cases:
-            - case: エッジケースの説明
-              response: 期待されるレスポンス
-              reason: なぜそうすべきか
+            - case: Edge case description
+              response: Expected response
+              reason: Why it should be so
 ```
 
-#### Contract が曖昧な場合の対処
+#### Handling Ambiguous Contracts
 
-**実装前に質問する:**
-- "このフィールドの `null` は何を意味しますか？"
-- "同時実行時の振る舞いは？"
-- "このステータスコードを返す条件は？"
+**Ask questions before implementation:**
+- "What does `null` mean for this field?"
+- "Behavior during concurrent execution?"
+- "Conditions for returning this status code?"
 
-**実装中は推測しない:**
-- Contract に書かれていないことは実装しない
-- 過度な一般化や抽象化を避ける
-- 必要最小限の実装に留める
+**Don't guess during implementation:**
+- Don't implement what's not written in Contract
+- Avoid excessive generalization or abstraction
+- Keep implementation minimal
 
-## 🏗️ 開発フロー
+## 🏗️ Development Flow
 
-### Phase 1: Contract 定義（人間の仕事）
+### Phase 1: Contract Definition (Human's Job)
 
+1. **Define service boundaries**
+   - Identify domains
+   - Define responsibilities
+   - Set constraints
+
+2. **Write Contract**
+   - API schema
+   - Business context
+   - Semantic information
+   - Test scenarios
+
+3. **Review Contract**
+   - Eliminate ambiguities
+   - Verify completeness
+   - Check security considerations
+
+### Phase 2: Implementation (AI's Job)
+
+1. **Read Contract**
+   - Understand purpose
+   - Grasp constraints
+   - Identify dependencies
+
+2. **Design Structure**
+   - File organization
+   - Module division
+   - Data flow
+
+3. **Implement**
+   - Follow Contract strictly
+   - Apply best practices
+   - Add appropriate tests
+
+4. **Verify**
+   - Contract compliance check
+   - Run tests
+   - Performance verification
+
+### Phase 3: Review & Deploy (Human + AI)
+
+1. **Human Review**
+   - Verify Contract compliance
+   - Check for security issues
+   - Confirm business logic
+
+2. **Integration Testing**
+   - Service-to-service communication
+   - End-to-end scenarios
+   - Performance testing
+
+3. **Deploy**
+   - Docker Compose orchestration
+   - Health checks
+   - Monitoring
+
+## 🐳 Docker First Detailed Rules
+
+### File Structure
+
+Every service must have:
 ```
-1. ビジネス要件を整理
-2. Contract を YAML で定義
-   - API スキーマ
-   - セマンティック情報
-   - エッジケースの期待動作
-3. レビュー & 曖昧性の排除
-4. Contract を確定
+service-name/
+├── Dockerfile          # Service container definition
+├── docker-compose.yml  # Orchestration configuration
+├── main.go            # Entry point
+├── go.mod             # Dependency management
+└── test.sh            # Test execution script
 ```
 
-### Phase 2: 実装（AI の仕事）
-
-```
-1. Contract を読み込む
-2. Docker 環境をセットアップ
-3. 実装を自律的に進める
-   - エンドポイントの実装
-   - エラーハンドリング
-   - バリデーション
-   - テスト
-4. Contract との適合性を検証
-5. 完了報告
-```
-
-### Phase 3: 検証（自動）
-
-```
-1. Contract から自動生成されたテストを実行
-2. すべてのエンドポイントとエッジケースを確認
-3. 結果をレポート
-```
-
-## 🐳 Docker ベストプラクティス
-
-### 1. マルチステージビルド
+### Dockerfile Best Practices
 
 ```dockerfile
-# Build stage
-FROM golang:1.22-alpine AS builder
-WORKDIR /build
+# Multi-stage build
+FROM golang:1.22 AS builder
+WORKDIR /app
+COPY go.* ./
+RUN go mod download
 COPY . .
-RUN go build -o service .
+RUN go build -o service
 
-# Runtime stage
-FROM alpine:latest
-COPY --from=builder /build/service .
-CMD ["./service"]
+# Minimal runtime image
+FROM gcr.io/distroless/base-debian12
+COPY --from=builder /app/service /service
+EXPOSE 8080
+CMD ["/service"]
 ```
 
-### 2. docker-compose.yml の構造
+### Docker Compose Rules
 
 ```yaml
+version: '3.8'
 services:
   service-name:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: tsubo-service-name
+    build: .
     ports:
       - "8080:8080"
     environment:
-      - ENV_VAR=value
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "http://localhost:8080/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+      - ENV=development
+    networks:
+      - tsubo-network
+
+networks:
+  tsubo-network:
+    driver: bridge
 ```
 
-### 3. ポート管理
+## 📋 Contract-Driven Development
 
-```
-- 各サービスは固有のホストポートを使用
-- コンテナ内は標準ポート（例: 8080）を使用
-- ポート競合を避けるため、8080-8099 の範囲を使用
+### Contract as Prompt Context
+
+Contracts serve as:
+1. **For Humans**: Service specification
+2. **For AI**: Implementation instructions
+3. **For Tests**: Validation criteria
+
+### Contract Compliance Verification
+
+```bash
+# Automatic Contract compliance check
+tsubo verify
+
+# Check specific service
+tsubo verify --service user-service
 ```
 
-### 4. ボリューム管理
+### Test-Driven by Contract
 
 ```yaml
-volumes:
-  # 永続化が必要なデータのみボリューム化
-  - ./data:/app/data
+# Contract includes test scenarios
+tests:
+  - name: Create user success
+    given: Valid user data
+    when: POST /users
+    then: 201 Created
 
-# 開発中のコード変更を反映する場合
-  - .:/app
+  - name: Create user duplicate email
+    given: Existing email
+    when: POST /users
+    then: 409 Conflict
 ```
 
-## 📝 ファイル構成
+## 🚫 What NOT to Do
 
-### 各サービスの標準構成
+### Don't Ask During Implementation
 
-```
-service-name/
-├── Dockerfile           # Docker イメージ定義
-├── docker-compose.yml   # Docker Compose 設定
-├── .dockerignore        # Docker ビルド除外設定
-├── main.go              # エントリーポイント
-├── handler.go           # HTTPハンドラー
-├── model.go             # データモデル
-├── storage.go           # データストレージ
-├── go.mod               # 依存関係
-├── test.sh              # Contract テストスクリプト
-└── README.md            # ドキュメント
-```
+❌ **Bad:**
+- "Should I use repository pattern?"
+- "Which error handling approach?"
+- "Add logging here?"
 
-## ✅ チェックリスト
+✅ **Good:**
+- Implement according to Contract
+- Follow Go best practices
+- Add tests as defined in Contract
 
-### Contract 定義時
-- [ ] すべてのエンドポイントに `semantics.intent` が記述されている
-- [ ] エッジケースと期待される振る舞いが明記されている
-- [ ] 型定義が完全である（`null` 許容も含む）
-- [ ] セキュリティ要件が明確である
-- [ ] パフォーマンス要件が定義されている
+### Don't Modify Local Environment
 
-### 実装時
-- [ ] Dockerfile を作成した
-- [ ] docker-compose.yml を作成した
-- [ ] .dockerignore を作成した
-- [ ] 環境変数で設定を外部化した
-- [ ] ヘルスチェックを実装した
-- [ ] Contract テストスクリプトを作成した
-- [ ] すべてのエッジケースをテストした
+❌ **Bad:**
+- Install dependencies on host
+- Use host's database
+- Modify host's network settings
 
-### レビュー時
-- [ ] Docker コンテナ内で動作確認した
-- [ ] Contract との適合性を確認した
-- [ ] すべてのテストが pass した
-- [ ] ローカル環境への影響がないことを確認した
-- [ ] README が更新されている
+✅ **Good:**
+- Everything in Docker
+- Use container's database
+- Network isolation with Docker networks
 
-## 🚫 アンチパターン
+### Don't Over-Engineer
 
-### やってはいけないこと
+❌ **Bad:**
+- Add features not in Contract
+- Create complex abstractions
+- Anticipate future requirements
 
-❌ **ローカルに直接依存関係をインストール**
-```bash
-# NG
-go install github.com/some/tool
+✅ **Good:**
+- Implement exactly what Contract defines
+- Keep it simple
+- YAGNI (You Aren't Gonna Need It)
 
-# OK
-docker-compose run service go install github.com/some/tool
-```
+## 📊 Success Metrics
 
-❌ **Contract にない機能を実装**
-```go
-// NG: Contract にない「優先度」フィールドを追加
-type Todo struct {
-    Priority int // Contract にない！
-}
+### Code Quality
+- ✅ 100% Contract compliance
+- ✅ All tests passing
+- ✅ No security vulnerabilities
 
-// OK: Contract 通りに実装
-type Todo struct {
-    // Contract で定義されたフィールドのみ
-}
-```
+### Development Speed
+- ✅ Average implementation time: 2-4 hours per service
+- ✅ Parallel implementation: 3-5 services simultaneously
+- ✅ First-time success rate: >80%
 
-❌ **実装中に仕様を質問**
-```
-NG: "このエラーメッセージはどうしますか？"
-    → Contract に定義されているはず
-
-OK: "Contract のこの部分が曖昧です"
-    → 実装前に質問する
-```
-
-❌ **過度な一般化・抽象化**
-```go
-// NG: 使われないかもしれない汎用的な仕組み
-type GenericRepository[T any] interface {
-    // 複雑な汎用インターフェース
-}
-
-// OK: 必要最小限の実装
-type TodoStorage interface {
-    Create(todo *Todo) error
-    Get(id string) (*Todo, error)
-    // Contract で必要な操作のみ
-}
-```
-
-## 📊 成功の指標
-
-### 質疑の削減
-- 実装前の質疑: 3-5個（適切）
-- 実装中の質疑: 0個（目標）
-
-### 環境の隔離
-- ローカル環境への変更: 0件
-- Docker コンテナのみで完結: 100%
-
-### Contract との適合性
-- Contract テストの pass 率: 100%
-- エッジケースのカバー率: 100%
+### Maintainability
+- ✅ Code consistency across services
+- ✅ Easy to understand and modify
+- ✅ Self-documenting through Contracts
 
 ---
 
-**これらの原則に従うことで、Tsubo の哲学を体現した開発が実現できます。**
-
-> "人間は Contract を決め、AI は実装を決める。環境は Docker が隔離する。"
+> "Follow principles strictly, automate ruthlessly, ship quickly."

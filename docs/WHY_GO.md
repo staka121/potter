@@ -1,25 +1,25 @@
-# なぜ Go言語なのか
+# Why Go Language?
 
 ## TL;DR
 
-**Tsubo は Go言語をターゲット言語として選択しました。**
-理由はシンプルです：**Go の「誰が書いても同じコードになる」という特性が、AIによるハルシネーションを劇的に低減するから。**
+**Tsubo chose Go as its target language.**
+The reason is simple: **Go's characteristic of "same code regardless of who writes it" dramatically reduces AI hallucinations.**
 
-## Go言語の設計哲学とAI駆動開発の相性
+## Go Language Design Philosophy and AI-Driven Development Compatibility
 
-### 1. 単一の正解パターン（One Obvious Way）
+### 1. One Obvious Way
 
-**Go の設計哲学:**
+**Go's Design Philosophy:**
 > "There should be one-- and preferably only one --obvious way to do it."
 
-**AI駆動開発にとっての意味:**
-- AIが「どう書くべきか」で迷わない
-- 選択肢が少ない = ハルシネーションが少ない
-- 生成されるコードの一貫性が高い
+**Meaning for AI-Driven Development:**
+- AI doesn't get confused about "how to write it"
+- Fewer choices = fewer hallucinations
+- Higher consistency in generated code
 
-**例: エラーハンドリング**
+**Example: Error Handling**
 
-Go では、エラーハンドリングのパターンはほぼ1つ：
+In Go, there's essentially one pattern for error handling:
 ```go
 result, err := doSomething()
 if err != nil {
@@ -27,7 +27,7 @@ if err != nil {
 }
 ```
 
-他の言語（例: TypeScript）では複数の方法がある：
+In other languages (e.g., TypeScript), there are multiple ways:
 ```typescript
 // Option 1: try-catch
 try {
@@ -42,41 +42,41 @@ doSomething().catch(error => {
 });
 
 // Option 3: async/await with try-catch
-// Option 4: Result型パターン
+// Option 4: Result type pattern
 // etc.
 ```
 
-AIは選択肢が多いと迷い、一貫性のないコードを生成しやすい。
+When AI has too many options, it gets confused and tends to generate inconsistent code.
 
-### 2. シンプルな言語仕様
+### 2. Simple Language Specification
 
-**Go の言語仕様:**
-- キーワードは **25個のみ**（C++: 95個、Rust: 50個以上）
-- 例外処理なし（エラー値を返す）
-- ジェネリクスは最近追加されたが、シンプル
-- クラスなし（構造体とインターフェース）
-- 継承なし（コンポジション）
+**Go Language Specification:**
+- Only **25 keywords** (C++: 95, Rust: 50+)
+- No exceptions (returns error values)
+- Recently added generics, but simple
+- No classes (structs and interfaces)
+- No inheritance (composition)
 
-**AI駆動開発にとっての意味:**
-- AIが理解すべき概念が少ない
-- 複雑な言語機能による混乱が少ない
-- プロンプトコンテキストがシンプルになる
+**Meaning for AI-Driven Development:**
+- Fewer concepts for AI to understand
+- Less confusion from complex language features
+- Simpler prompt context
 
-### 3. 標準フォーマット（gofmt）
+### 3. Standard Formatting (gofmt)
 
-**Go の特徴:**
-- `gofmt` が標準で提供される
-- インデント、改行、スペースなどが自動的に統一される
-- **コードスタイルに関する議論がゼロ**
+**Go's Characteristic:**
+- `gofmt` provided as standard
+- Indentation, line breaks, spaces automatically unified
+- **Zero debates about code style**
 
-**AI駆動開発にとっての意味:**
-- AIが生成したコードも自動的に統一される
-- フォーマットに関するハルシネーションがない
-- レビューがコードの内容に集中できる
+**Meaning for AI-Driven Development:**
+- AI-generated code automatically unified
+- No hallucinations about formatting
+- Reviews can focus on code content
 
-### 4. 明示的なエラーハンドリング
+### 4. Explicit Error Handling
 
-**Go の設計:**
+**Go's Design:**
 ```go
 func createUser(email string) (*User, error) {
     if !isValidEmail(email) {
@@ -92,106 +92,95 @@ func createUser(email string) (*User, error) {
 }
 ```
 
-エラーは**値として**扱われ、明示的にチェックされる。
+Errors are treated as **values** and explicitly checked.
 
-**AI駆動開発にとっての意味:**
-- エラーケースが見落とされにくい
-- AIが「エラーを返すべき場所」を明確に理解できる
-- 例外による暗黙的な制御フローがない
+**Meaning for AI-Driven Development:**
+- Error cases less likely to be overlooked
+- AI can clearly understand "where errors should be returned"
+- No implicit control flow from exceptions
 
-### 5. 標準ライブラリの充実
+### 5. Rich Standard Library
 
-**Go の標準ライブラリ:**
-- `net/http`: HTTPサーバー/クライアント
-- `encoding/json`: JSON エンコード/デコード
-- `database/sql`: データベース接続
-- `testing`: テストフレームワーク
-- `context`: コンテキスト管理
+**Go's Standard Library:**
+- `net/http`: HTTP server/client
+- `encoding/json`: JSON encoding/decoding
+- `database/sql`: Database connections
+- `testing`: Testing framework
+- `context`: Context management
 
-**AI駆動開発にとっての意味:**
-- 外部依存が少ない = AIが混乱しにくい
-- 標準的なパターンが確立されている
-- ドキュメントが豊富
+**Meaning for AI-Driven Development:**
+- Fewer external dependencies = less AI confusion
+- Established standard patterns
+- Abundant documentation
 
-## 他の言語との比較
+## Comparison with Other Languages
 
-### Rust の課題
+### Rust's Challenges
 
-**良い点:**
-- ✅ 型安全性が非常に高い
-- ✅ パフォーマンスが優れている
-- ✅ メモリ安全性
+**Good Points:**
+- ✅ Very high type safety
+- ✅ Excellent performance
+- ✅ Memory safety
 
-**AI駆動開発の観点での課題:**
-- ❌ ライフタイム、所有権、借用などの複雑な概念
-- ❌ 同じことを実現する方法が複数ある（`String` vs `&str`, `Vec` vs `&[T]`, etc.）
-- ❌ AIがハルシネーションを起こしやすい
-- ❌ コンパイルエラーが多く、修正が難しい
+**Challenges from AI-Driven Development Perspective:**
+- ❌ Complex concepts like lifetime, ownership, borrowing
+- ❌ Multiple ways to achieve the same thing (`String` vs `&str`, `Vec` vs `&[T]`, etc.)
+- ❌ AI prone to hallucinations
+- ❌ Many compile errors, difficult to fix
 
-**例: 文字列の扱い**
+**Example: String Handling**
 ```rust
-// AIは以下のどれを使うべきか迷う
-fn process1(s: String) { }        // 所有権を奪う
-fn process2(s: &str) { }          // 借用（文字列スライス）
-fn process3(s: &String) { }       // 借用（String への参照）
+// AI gets confused about which to use
+fn process1(s: String) { }        // Takes ownership
+fn process2(s: &str) { }          // Borrows (string slice)
+fn process3(s: &String) { }       // Borrows (reference to String)
 ```
 
-Goでは：
+In Go:
 ```go
-func process(s string) { }  // これだけ
+func process(s string) { }  // Just this
 ```
 
-### TypeScript の課題
+### TypeScript's Challenges
 
-**良い点:**
-- ✅ Web/Node.js エコシステムが豊富
-- ✅ 型システムが柔軟
+**Good Points:**
+- ✅ Rich Web/Node.js ecosystem
+- ✅ Flexible type system
 
-**AI駆動開発の観点での課題:**
-- ❌ JavaScriptの柔軟性が仇となる（書き方が多様）
-- ❌ 設定が複雑（tsconfig.json, webpack, vite, etc.）
-- ❌ `any` 型による型安全性の抜け穴
-- ❌ Promise/async/await のエラーハンドリングが複雑
+**Challenges from AI-Driven Development Perspective:**
+- ❌ JavaScript's flexibility becomes a hindrance (diverse ways to write)
+- ❌ Complex configuration (tsconfig.json, webpack, vite, etc.)
+- ❌ Type safety loopholes with `any` type
+- ❌ Complex error handling with Promise/async/await
 
-### Python の課題
+### Python's Challenges
 
-**良い点:**
-- ✅ シンプルで読みやすい
-- ✅ AI/ML エコシステムが豊富
+**Good Points:**
+- ✅ Simple and readable
+- ✅ Rich AI/ML ecosystem
 
-**AI駆動開発の観点での課題:**
-- ❌ 動的型付け（型ヒントは完全ではない）
-- ❌ パフォーマンスが低い（マイクロサービスには不向きな場合も）
-- ❌ 実行時エラーが多い
+**Challenges from AI-Driven Development Perspective:**
+- ❌ Dynamic typing (type hints are not complete)
+- ❌ Low performance (sometimes unsuitable for microservices)
+- ❌ Many runtime errors
 
-## Go の「シンプルさ」がもたらす効果
+## Effects of Go's "Simplicity"
 
-### 効果1: ハルシネーションの削減
+### Effect 1: Reduced Hallucinations
 
-**測定可能な指標:**
-- コンパイルエラーの発生率
-- 実行時エラーの発生率
-- レビューでの指摘事項の数
+**Measurable Metrics:**
+- Compile error occurrence rate
+- Runtime error occurrence rate
+- Number of review comments
 
-**Go のシンプルさによる効果:**
-- 選択肢が少ない → AIが正しいパターンを選びやすい
-- 明示的なエラーハンドリング → エラーケースの見落としが少ない
-- 型システム → 型関連のエラーが少ない
+**Effects from Go's Simplicity:**
+- Fewer choices → AI more likely to choose correct pattern
+- Explicit error handling → Fewer error case oversights
+- Type system → Fewer type-related errors
 
-### 効果2: 一貫性のあるコードベース
+### Effect 2: Consistent Codebase
 
-**人間が書いた Go コード:**
-```go
-func GetUser(id string) (*User, error) {
-    user, err := db.Query("SELECT * FROM users WHERE id = ?", id)
-    if err != nil {
-        return nil, err
-    }
-    return user, nil
-}
-```
-
-**AIが生成した Go コード:**
+**Go Code Written by Humans:**
 ```go
 func GetUser(id string) (*User, error) {
     user, err := db.Query("SELECT * FROM users WHERE id = ?", id)
@@ -202,68 +191,79 @@ func GetUser(id string) (*User, error) {
 }
 ```
 
-**→ ほぼ同じコードになる！**
+**Go Code Generated by AI:**
+```go
+func GetUser(id string) (*User, error) {
+    user, err := db.Query("SELECT * FROM users WHERE id = ?", id)
+    if err != nil {
+        return nil, err
+    }
+    return user, nil
+}
+```
 
-### 効果3: レビューの効率化
+**→ Nearly identical code!**
 
-- コードスタイルの議論が不要（gofmt で統一）
-- パターンが一貫しているため、レビューが速い
-- AIが生成したコードでも、人間が書いたコードと区別がつかない
+### Effect 3: Efficient Reviews
 
-## Tsubo におけるGo言語の役割
+- No code style debates (unified by gofmt)
+- Fast reviews due to consistent patterns
+- AI-generated code indistinguishable from human-written code
 
-### 1. Orchestrator（オーケストレーター）
-- **言語: Go**
-- 理由: 並行処理（goroutine）、シンプルさ
+## Go Language's Role in Tsubo
 
-### 2. Validator（検証エンジン）
-- **言語: Go**（当初はRustを検討したが、Go に統一）
-- 理由: コードベースの統一、十分な型安全性
+### 1. Orchestrator
+- **Language: Go**
+- Reason: Concurrency (goroutines), simplicity
 
-### 3. 生成されるサービス
-- **推奨言語: Go**
-- 理由: AIによるハルシネーション最小化
-- 将来的には TypeScript, Python もサポート予定
+### 2. Validator (Verification Engine)
+- **Language: Go** (initially considered Rust, but unified to Go)
+- Reason: Codebase unification, sufficient type safety
 
-### 4. CLI ツール
-- **言語: Go**
-- 理由: シングルバイナリで配布可能、クロスプラットフォーム
+### 3. Generated Services
+- **Recommended Language: Go**
+- Reason: Minimize AI hallucinations
+- Future support planned for TypeScript, Python
 
-## Go の制約と対処法
+### 4. CLI Tool
+- **Language: Go**
+- Reason: Single binary distribution, cross-platform
 
-### 制約1: ジェネリクスが弱い（Go 1.18 以降は改善）
-**対処法:**
-- 必要な箇所でのみジェネリクスを使用
-- コード生成で補完
+## Go's Limitations and Countermeasures
 
-### 制約2: パフォーマンスは Rust に劣る
-**対処法:**
-- ほとんどのマイクロサービスでは Go で十分
-- 本当にパフォーマンスが必要な箇所は個別に最適化
+### Limitation 1: Weaker Generics (improved since Go 1.18)
+**Countermeasure:**
+- Use generics only where needed
+- Supplement with code generation
 
-### 制約3: 依存性注入が言語レベルでサポートされていない
-**対処法:**
-- シンプルな構造体ベースの DI を採用
-- 複雑な DI フレームワークは使わない（AIが混乱する）
+### Limitation 2: Performance Inferior to Rust
+**Countermeasure:**
+- Go is sufficient for most microservices
+- Individually optimize where performance is truly needed
 
-## 結論
+### Limitation 3: Dependency Injection Not Supported at Language Level
+**Countermeasure:**
+- Adopt simple struct-based DI
+- Don't use complex DI frameworks (confuses AI)
 
-**Tsubo が Go言語を選択する理由:**
+## Conclusion
 
-1. ✅ **誰が書いても同じコードになる** → AIのハルシネーション最小化
-2. ✅ **シンプルな言語仕様** → AIが理解しやすい
-3. ✅ **明示的なエラーハンドリング** → エラーケースの見落とし防止
-4. ✅ **標準フォーマット（gofmt）** → コードスタイルの統一
-5. ✅ **マイクロサービスのエコシステム** → 実用的
-6. ✅ **統一されたコードベース** → Orchestrator も Validator も Go
+**Why Tsubo Chooses Go:**
 
-**Tsubo の哲学:**
-> "AIによるハルシネーションを最小化するために、最もシンプルで一貫性のある言語を選ぶ。
-> それが Go言語である。"
+1. ✅ **Same code regardless of who writes it** → Minimize AI hallucinations
+2. ✅ **Simple language specification** → Easy for AI to understand
+3. ✅ **Explicit error handling** → Prevent error case oversights
+4. ✅ **Standard formatting (gofmt)** → Unified code style
+5. ✅ **Microservices ecosystem** → Practical
+6. ✅ **Unified codebase** → Both Orchestrator and Validator in Go
+
+**Tsubo's Philosophy:**
+> "To minimize AI hallucinations, choose the simplest and most consistent language.
+> That is Go."
 
 ---
 
-## 参考資料
+## References
 
 - [Go Proverbs](https://go-proverbs.github.io/)
 - [Effective Go](https://go.dev/doc/effective_go)
