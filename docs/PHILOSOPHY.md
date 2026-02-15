@@ -13,16 +13,16 @@ In the Potter framework, the craftsman (Potter) creates the pot (Tsubo), and AI 
       ┌─────────────────────────────────────────┐
       │   Tsubo (Pot) = Entire Application      │  ← Humans define the shape
       │                                         │
-      │  ┌──────────┐  ┌──────────┐            │
-      │  │  TODO    │  │   User   │   ...      │  ← Solid Objects
-      │  │  Domain  │  │  Domain  │            │     (Microservices)
-      │  │┌────────┐│  │┌────────┐│            │
-      │  ││Contract││  ││Contract││            │  ← Contract (Shape)
-      │  │└────────┘│  │└────────┘│            │
-      │  │  ┌────┐ │  │  ┌────┐ │            │
-      │  │  │Impl│ │  │  │Impl│ │            │  ← AI decides implementation
-      │  │  └────┘ │  │  └────┘ │            │
-      │  └──────────┘  └──────────┘            │
+      │  ┌──────────┐  ┌──────────┐             │
+      │  │  TODO    │  │   User   │   ...       │  ← Solid Objects
+      │  │  Domain  │  │  Domain  │             │     (Microservices)
+      │  │┌────────┐│  │┌────────┐│             │
+      │  ││Contract││  ││Contract││             │  ← Contract (Shape)
+      │  │└────────┘│  │└────────┘│             │
+      │  │  ┌────┐  │  │  ┌────┐  │             │
+      │  │  │Impl│  │  │  │Impl│  │             │  ← AI decides implementation
+      │  │  └────┘  │  │  └────┘  │             │
+      │  └──────────┘  └──────────┘             │
       │                                         │
       └─────────────────────────────────────────┘
 
