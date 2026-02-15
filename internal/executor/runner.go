@@ -69,11 +69,20 @@ func (r *Runner) GetTempDir() string {
 // ExecuteAll executes all waves in the implementation plan
 func (r *Runner) ExecuteAll() ([]ExecutionResult, error) {
 	var allResults []ExecutionResult
-
+	totalWaves := len(r.plan.Waves)
+	totalObjects := 0
 	for _, wave := range r.plan.Waves {
-		fmt.Printf("\n=== Executing Wave %d ===\n", wave.Wave)
-		fmt.Printf("Objects: %d\n", len(wave.Objects))
-		fmt.Printf("Mode: ")
+		totalObjects += len(wave.Objects)
+	}
+
+	fmt.Printf("\n📋 Total: %d wave(s), %d object(s)\n", totalWaves, totalObjects)
+
+	completedObjects := 0
+
+	for waveIdx, wave := range r.plan.Waves {
+		fmt.Printf("\n🌊 Wave %d/%d (Wave ID: %d)\n", waveIdx+1, totalWaves, wave.Wave)
+		fmt.Printf("   Objects: %d\n", len(wave.Objects))
+		fmt.Printf("   Mode: ")
 		if wave.Parallel {
 			fmt.Println("Parallel")
 		} else {
@@ -81,7 +90,7 @@ func (r *Runner) ExecuteAll() ([]ExecutionResult, error) {
 		}
 		fmt.Println()
 
-		results, err := r.executeWave(wave)
+		results, err := r.executeWave(wave, &completedObjects, totalObjects)
 		if err != nil {
 			return allResults, fmt.Errorf("wave %d failed: %w", wave.Wave, err)
 		}
@@ -95,23 +104,24 @@ func (r *Runner) ExecuteAll() ([]ExecutionResult, error) {
 			}
 		}
 
-		fmt.Printf("Wave %d completed successfully\n", wave.Wave)
+		fmt.Printf("✅ Wave %d/%d completed\n", waveIdx+1, totalWaves)
 	}
 
 	return allResults, nil
 }
 
 // executeWave executes all objects in a wave
-func (r *Runner) executeWave(wave types.Wave) ([]ExecutionResult, error) {
+func (r *Runner) executeWave(wave types.Wave, completedObjects *int, totalObjects int) ([]ExecutionResult, error) {
 	if wave.Parallel {
-		return r.executeParallel(wave.Objects)
+		return r.executeParallel(wave.Objects, completedObjects, totalObjects)
 	}
-	return r.executeSequential(wave.Objects)
+	return r.executeSequential(wave.Objects, completedObjects, totalObjects)
 }
 
 // executeParallel executes objects in parallel with optional concurrency limit
-func (r *Runner) executeParallel(objects []types.ObjectInWave) ([]ExecutionResult, error) {
+func (r *Runner) executeParallel(objects []types.ObjectInWave, completedObjects *int, totalObjects int) ([]ExecutionResult, error) {
 	var wg sync.WaitGroup
+	var mu sync.Mutex
 	results := make([]ExecutionResult, len(objects))
 	errors := make([]error, len(objects))
 
@@ -135,7 +145,7 @@ func (r *Runner) executeParallel(objects []types.ObjectInWave) ([]ExecutionResul
 				defer func() { <-semaphore }() // Release semaphore
 			}
 
-			result, err := r.executeObject(object)
+			result, err := r.executeObject(object, completedObjects, totalObjects, &mu)
 			results[index] = result
 			errors[index] = err
 		}(i, obj)
@@ -155,11 +165,12 @@ func (r *Runner) executeParallel(objects []types.ObjectInWave) ([]ExecutionResul
 }
 
 // executeSequential executes objects sequentially
-func (r *Runner) executeSequential(objects []types.ObjectInWave) ([]ExecutionResult, error) {
+func (r *Runner) executeSequential(objects []types.ObjectInWave, completedObjects *int, totalObjects int) ([]ExecutionResult, error) {
 	results := make([]ExecutionResult, 0, len(objects))
+	var mu sync.Mutex
 
 	for _, obj := range objects {
-		result, err := r.executeObject(obj)
+		result, err := r.executeObject(obj, completedObjects, totalObjects, &mu)
 		if err != nil {
 			result.Success = false
 			result.Error = err
@@ -175,7 +186,7 @@ func (r *Runner) executeSequential(objects []types.ObjectInWave) ([]ExecutionRes
 }
 
 // executeObject executes implementation for a single object
-func (r *Runner) executeObject(obj types.ObjectInWave) (ExecutionResult, error) {
+func (r *Runner) executeObject(obj types.ObjectInWave, completedObjects *int, totalObjects int, mu *sync.Mutex) (ExecutionResult, error) {
 	result := ExecutionResult{
 		ObjectName: obj.Name,
 		Success:    false,
@@ -183,9 +194,19 @@ func (r *Runner) executeObject(obj types.ObjectInWave) (ExecutionResult, error) 
 
 	start := time.Now()
 
-	fmt.Printf("[%s] Starting implementation...\n", obj.Name)
+	// Show progress
+	mu.Lock()
+	*completedObjects++
+	currentCount := *completedObjects
+	mu.Unlock()
+
+	fmt.Printf("\n[%d/%d] 🔨 %s\n", currentCount, totalObjects, obj.Name)
+	if len(obj.Dependencies) > 0 {
+		fmt.Printf("   Dependencies: %v\n", obj.Dependencies)
+	}
 
 	// Generate prompt
+	fmt.Printf("   ⏳ Generating prompt...\n")
 	prompt, err := r.generator.GeneratePrompt(obj)
 	if err != nil {
 		return result, fmt.Errorf("failed to generate prompt: %w", err)
@@ -194,11 +215,11 @@ func (r *Runner) executeObject(obj types.ObjectInWave) (ExecutionResult, error) 
 	// Save prompt to file for debugging
 	promptFile := filepath.Join(r.tempDir, fmt.Sprintf("tsubo-prompt-%s.md", obj.Name))
 	if err := os.WriteFile(promptFile, []byte(prompt), 0644); err != nil {
-		fmt.Printf("[%s] Warning: failed to save prompt file: %v\n", obj.Name, err)
+		fmt.Printf("   ⚠️  Warning: failed to save prompt file: %v\n", err)
 	}
 
 	// Execute with Claude API
-	fmt.Printf("[%s] Calling Claude API...\n", obj.Name)
+	fmt.Printf("   🤖 Calling Claude API (this may take a while)...\n")
 	response, err := r.client.Implement(prompt)
 	if err != nil {
 		result.Duration = time.Since(start)
@@ -217,9 +238,9 @@ func (r *Runner) executeObject(obj types.ObjectInWave) (ExecutionResult, error) 
 	// Extract files from response
 	files := extractFiles(response)
 	if len(files) == 0 {
-		fmt.Printf("[%s] Warning: no files extracted from response\n", obj.Name)
+		fmt.Printf("   ⚠️  Warning: no files extracted from response\n")
 	} else {
-		fmt.Printf("[%s] Extracted %d file(s) from response\n", obj.Name, len(files))
+		fmt.Printf("   📦 Extracted %d file(s) from response\n", len(files))
 
 		// Save implementation to implementations directory
 		serviceDir := filepath.Join(r.plan.ImplementationsDir, obj.Name)
@@ -228,11 +249,11 @@ func (r *Runner) executeObject(obj types.ObjectInWave) (ExecutionResult, error) 
 			return result, fmt.Errorf("failed to save implementation: %w", err)
 		}
 
-		fmt.Printf("[%s] Implementation saved to: %s\n", obj.Name, serviceDir)
+		fmt.Printf("   💾 Saved to: %s\n", serviceDir)
 	}
 
-	fmt.Printf("[%s] Implementation completed in %s\n", obj.Name, result.Duration)
-	fmt.Printf("[%s] Response saved to: %s\n", obj.Name, responseFile)
+	fmt.Printf("   ⏱️  Completed in %s\n", result.Duration)
+	fmt.Printf("   ✅ %s implemented successfully\n", obj.Name)
 
 	result.Success = true
 	return result, nil
