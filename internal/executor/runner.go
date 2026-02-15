@@ -23,9 +23,10 @@ type ExecutionResult struct {
 
 // Runner executes implementation tasks
 type Runner struct {
-	client    *ClaudeClient
-	generator *PromptGenerator
-	plan      *types.ImplementationPlan
+	client      *ClaudeClient
+	generator   *PromptGenerator
+	plan        *types.ImplementationPlan
+	concurrency int // 0 = unlimited
 }
 
 // NewRunner creates a new execution runner
@@ -36,10 +37,16 @@ func NewRunner(plan *types.ImplementationPlan) (*Runner, error) {
 	}
 
 	return &Runner{
-		client:    client,
-		generator: NewPromptGenerator(plan),
-		plan:      plan,
+		client:      client,
+		generator:   NewPromptGenerator(plan),
+		plan:        plan,
+		concurrency: 0, // unlimited by default
 	}, nil
+}
+
+// SetConcurrency sets the maximum number of parallel executions
+func (r *Runner) SetConcurrency(n int) {
+	r.concurrency = n
 }
 
 // ExecuteAll executes all waves in the implementation plan
@@ -85,16 +92,31 @@ func (r *Runner) executeWave(wave types.Wave) ([]ExecutionResult, error) {
 	return r.executeSequential(wave.Objects)
 }
 
-// executeParallel executes objects in parallel
+// executeParallel executes objects in parallel with optional concurrency limit
 func (r *Runner) executeParallel(objects []types.ObjectInWave) ([]ExecutionResult, error) {
 	var wg sync.WaitGroup
 	results := make([]ExecutionResult, len(objects))
 	errors := make([]error, len(objects))
 
+	// Create semaphore channel for concurrency control
+	var semaphore chan struct{}
+	if r.concurrency > 0 {
+		semaphore = make(chan struct{}, r.concurrency)
+	}
+
 	for i, obj := range objects {
 		wg.Add(1)
+
+		// Acquire semaphore if concurrency limit is set
+		if semaphore != nil {
+			semaphore <- struct{}{}
+		}
+
 		go func(index int, object types.ObjectInWave) {
 			defer wg.Done()
+			if semaphore != nil {
+				defer func() { <-semaphore }() // Release semaphore
+			}
 
 			result, err := r.executeObject(object)
 			results[index] = result

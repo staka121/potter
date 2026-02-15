@@ -17,7 +17,7 @@ func GeneratePlan(
 	objects []analyzer.ObjectWithDeps,
 ) *types.ImplementationPlan {
 	// Get context files
-	contextFiles := getContextFiles(projectRoot)
+	contextFiles := GetContextFiles(projectRoot)
 
 	// Generate waves
 	waves := GenerateWaves(objects)
@@ -32,8 +32,8 @@ func GeneratePlan(
 	}
 }
 
-// getContextFiles returns the list of context files that AI agents should read
-func getContextFiles(projectRoot string) []string {
+// GetContextFiles returns the list of context files that AI agents should read
+func GetContextFiles(projectRoot string) []string {
 	contextFiles := []string{
 		filepath.Join(projectRoot, "docs", "PHILOSOPHY.md"),
 		filepath.Join(projectRoot, "docs", "DEVELOPMENT_PRINCIPLES.md"),
