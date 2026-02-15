@@ -75,36 +75,46 @@ Tsubo は、これらの課題を「**壺＝コンテキストの境界**」と�
 
 ## クイックスタート
 
+### インストール
+
+```bash
+# リポジトリをクローン
+git clone https://github.com/staka121/tsubo.git
+cd tsubo
+
+# Tsubo CLI をビルド
+go build -o tsubo ./cmd/tsubo
+
+# またはインストール
+go install ./cmd/tsubo
+```
+
 ### AI駆動で新しいサービスを実装（完全自動化）
 
 ```bash
-# 1. 実装プランを生成
-./tsubo-plan ./poc/contracts/tsubo-todo-app.tsubo.yaml
+# 1. 新しいサービステンプレートを作成
+tsubo new user-service
 
-# 出力:
-# - Wave 0: user-service (並列実行可能)
-# - Wave 1: todo-service (user-service 完了後)
-# - Implementation plan: /tmp/tsubo-implementation-plan.json
+# 2. .tsubo.yaml ファイルを作成・編集してサービスを追加
+# （例: poc/contracts/tsubo-todo-app.tsubo.yaml を参照）
 
-# 2a. 自動実行（Phase 2 - Claude API使用）
-export ANTHROPIC_API_KEY=your-api-key
-./tsubo-execute --execute /tmp/tsubo-implementation-plan.json
+# 3. プロンプト生成のみ（手動実行用）
+tsubo build ./poc/contracts/tsubo-todo-app.tsubo.yaml
 
 # または
 
-# 2b. プロンプト生成のみ（Phase 1 - 手動実行用）
-./tsubo-execute /tmp/tsubo-implementation-plan.json
-# → /tmp/tsubo-prompt-*.md を AI エージェントに渡す
+# 4. AI駆動で自動実装（Claude API使用）
+export ANTHROPIC_API_KEY=your-api-key
+tsubo build ./poc/contracts/tsubo-todo-app.tsubo.yaml --ai
 
-# 3. 実装完了後、サービスを起動
-cd poc/implementations/user-service
-docker-compose up -d
+# 並行数を制限する場合
+tsubo build ./poc/contracts/tsubo-todo-app.tsubo.yaml --ai --concurrency 4
 
-cd ../todo-service
-docker-compose up -d
+# 5. 実装完了後、サービスを起動
+tsubo run -d
 
-# 4. テスト実行
-./test.sh
+# 6. テスト実行
+tsubo verify
 ```
 
 ### PoC の実行（Tsubo TODO アプリケーション）
@@ -114,21 +124,17 @@ docker-compose up -d
 git clone https://github.com/staka121/tsubo.git
 cd tsubo
 
-# tsubo-plan をビルド
-go build -o tsubo-plan ./cmd/tsubo-plan
+# Tsubo CLI をビルド
+go build -o tsubo ./cmd/tsubo
 
-# 実装プランを生成
-./tsubo-plan ./poc/contracts/tsubo-todo-app.tsubo.yaml
+# 実装プランを確認
+tsubo build ./poc/contracts/tsubo-todo-app.tsubo.yaml
 
 # 実装済みサービスを起動
-cd poc/implementations/user-service
-docker-compose up -d
-
-cd ../todo-service
-docker-compose up -d
+tsubo run -d
 
 # 統合テスト
-./test.sh
+tsubo verify
 ```
 
 **含まれるドメイン（固体オブジェクト）:**
@@ -342,15 +348,20 @@ Tsubo は以下の原則に基づいて開発されます：
 
 ---
 
-**Status:** ✅ **Full Automation Pipeline Complete**
-**Version:** 0.4.0
-**Latest Achievement:** 完全自動化パイプライン完成（Contract → 実装の全自動化）
+**Status:** ✅ **Unified CLI Complete**
+**Version:** 0.5.0
+**Latest Achievement:** 統一 CLI 実装完了（`tsubo` コマンドですべての操作が可能）
 
 **実装済み:**
-- ✅ tsubo-plan (Go) - 実装プランニングツール
-- ✅ tsubo-execute (Go) - プロンプト生成・Claude API 自動実行
-  - Phase 1: AI エージェント向けプロンプト生成
-  - Phase 2: Claude API による完全自動実装
+- ✅ **tsubo CLI** - 統一コマンドラインインターフェース
+  - `tsubo new` - サービステンプレート生成
+  - `tsubo build` - プラン生成・AI 実装（plan + execute 統合）
+  - `tsubo verify` - Contract 検証・テスト実行
+  - `tsubo run` - サービス起動
+  - 並行数制御（`--concurrency`）
+  - トポロジカルソートによる複数 Wave 対応
+- ✅ tsubo-plan (Go) - 実装プランニングツール（後方互換）
+- ✅ tsubo-execute (Go) - プロンプト生成・Claude API 自動実行（後方互換）
 - ✅ 壺（アプリケーション全体）: tsubo-todo-app
 - ✅ 2つの固体オブジェクト（AI が並列実装）:
   - user-service (Wave 0) - ユーザー管理
@@ -360,4 +371,4 @@ Tsubo は以下の原則に基づいて開発されます：
 - ✅ 100% Contract 準拠
 - ✅ 統合テスト完備
 
-**Contract を書くだけで、AI が自動的にマイクロサービスを実装する完全自動化パイプラインが完成しました！** 🎉
+**`tsubo` コマンド一つで、サービス作成から実装、検証、起動までのすべてが完結します！** 🎉
