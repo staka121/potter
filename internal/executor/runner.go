@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -197,11 +199,93 @@ func (r *Runner) executeObject(obj types.ObjectInWave) (ExecutionResult, error) 
 		fmt.Printf("[%s] Warning: failed to save response file: %v\n", obj.Name, err)
 	}
 
+	// Extract files from response
+	files := extractFiles(response)
+	if len(files) == 0 {
+		fmt.Printf("[%s] Warning: no files extracted from response\n", obj.Name)
+	} else {
+		fmt.Printf("[%s] Extracted %d file(s) from response\n", obj.Name, len(files))
+
+		// Save implementation to implementations directory
+		serviceDir := filepath.Join(r.plan.ImplementationsDir, obj.Name)
+		if err := saveImplementation(serviceDir, files); err != nil {
+			result.Duration = time.Since(start)
+			return result, fmt.Errorf("failed to save implementation: %w", err)
+		}
+
+		fmt.Printf("[%s] Implementation saved to: %s\n", obj.Name, serviceDir)
+	}
+
 	fmt.Printf("[%s] Implementation completed in %s\n", obj.Name, result.Duration)
 	fmt.Printf("[%s] Response saved to: %s\n", obj.Name, responseFile)
 
 	result.Success = true
 	return result, nil
+}
+
+// extractFiles extracts files from Claude's response
+// Supports patterns like:
+// - `filename`:
+//   ```lang
+//   content
+//   ```
+// - ```lang:filename
+//   content
+//   ```
+func extractFiles(response string) map[string]string {
+	files := make(map[string]string)
+
+	// Pattern 1: `filename`:\n```lang\ncontent\n```
+	pattern1 := regexp.MustCompile("`([^`]+)`:\\s*```[a-z]*\\s*([\\s\\S]*?)```")
+	matches1 := pattern1.FindAllStringSubmatch(response, -1)
+	for _, match := range matches1 {
+		if len(match) >= 3 {
+			filename := strings.TrimSpace(match[1])
+			content := strings.TrimSpace(match[2])
+			files[filename] = content
+		}
+	}
+
+	// Pattern 2: ```lang:filename\ncontent\n```
+	pattern2 := regexp.MustCompile("```[a-z]*:([^\\s]+)\\s*([\\s\\S]*?)```")
+	matches2 := pattern2.FindAllStringSubmatch(response, -1)
+	for _, match := range matches2 {
+		if len(match) >= 3 {
+			filename := strings.TrimSpace(match[1])
+			content := strings.TrimSpace(match[2])
+			files[filename] = content
+		}
+	}
+
+	return files
+}
+
+// saveImplementation saves extracted files to the implementations directory
+func saveImplementation(serviceDir string, files map[string]string) error {
+	// Create service directory
+	if err := os.MkdirAll(serviceDir, 0755); err != nil {
+		return fmt.Errorf("failed to create service directory: %w", err)
+	}
+
+	// Save each file
+	for filename, content := range files {
+		filePath := filepath.Join(serviceDir, filename)
+
+		// Create subdirectories if needed
+		dir := filepath.Dir(filePath)
+		if dir != serviceDir {
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				return fmt.Errorf("failed to create directory %s: %w", dir, err)
+			}
+		}
+
+		// Write file
+		if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
+			return fmt.Errorf("failed to write file %s: %w", filename, err)
+		}
+	}
+
+	return nil
 }
 
 // PrintSummary prints a summary of execution results

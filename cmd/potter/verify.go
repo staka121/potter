@@ -28,7 +28,20 @@ func runVerify(args []string) error {
 	fmt.Printf("%s========================================%s\n", colorBlue, colorReset)
 	fmt.Println()
 
-	implDir := "poc/implementations"
+	// Get tsubo file path (optional)
+	remainingArgs := fs.Args()
+	var implDir string
+
+	if len(remainingArgs) > 0 {
+		// Tsubo file specified
+		tsuboFile := remainingArgs[0]
+		tsuboDir := filepath.Dir(tsuboFile)
+		implDir = filepath.Join(tsuboDir, "implementations")
+	} else {
+		// Default to poc/implementations for backward compatibility
+		implDir = "poc/implementations"
+	}
+
 	if _, err := os.Stat(implDir); os.IsNotExist(err) {
 		return fmt.Errorf("implementations directory not found: %s", implDir)
 	}
@@ -127,7 +140,7 @@ func indent(text string, prefix string) string {
 }
 
 func printVerifyUsage() {
-	fmt.Println("Usage: potter verify [options]")
+	fmt.Println("Usage: potter verify [options] [tsubo-file]")
 	fmt.Println()
 	fmt.Println("Verifies contract compliance and runs tests for all services")
 	fmt.Println()
@@ -136,6 +149,7 @@ func printVerifyUsage() {
 	fmt.Println("  --help            Show this help message")
 	fmt.Println()
 	fmt.Println("Examples:")
-	fmt.Println("  potter verify                  # Verify all services")
-	fmt.Println("  potter verify --service user   # Verify user-service only")
+	fmt.Println("  potter verify                                   # Verify all services (uses poc/implementations)")
+	fmt.Println("  potter verify ./poc/contracts/app.tsubo.yaml    # Verify services from tsubo file")
+	fmt.Println("  potter verify --service user                    # Verify user-service only")
 }

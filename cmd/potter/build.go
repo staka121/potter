@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/staka121/potter/internal/analyzer"
 	"github.com/staka121/potter/internal/executor"
@@ -82,6 +83,10 @@ func generatePlan(tsuboFile string) (*types.ImplementationPlan, error) {
 	contractsDir := parser.GetContractsDir(tsuboFile)
 	projectRoot := parser.GetProjectRoot(contractsDir)
 
+	// Implementations directory is in the same directory as the tsubo file
+	tsuboDir := filepath.Dir(tsuboFile)
+	implementationsDir := filepath.Join(tsuboDir, "implementations")
+
 	// Analyze dependencies
 	objectsWithDeps, err := analyzer.AnalyzeDependencies(tsuboDef, contractsDir)
 	if err != nil {
@@ -96,12 +101,13 @@ func generatePlan(tsuboFile string) (*types.ImplementationPlan, error) {
 
 	// Create implementation plan
 	plan := &types.ImplementationPlan{
-		Tsubo:        tsuboDef.Tsubo.Name,
-		TsuboFile:    tsuboFile,
-		ContractsDir: contractsDir,
-		ProjectRoot:  projectRoot,
-		ContextFiles: contextFiles,
-		Waves:        waves,
+		Tsubo:              tsuboDef.Tsubo.Name,
+		TsuboFile:          tsuboFile,
+		ContractsDir:       contractsDir,
+		ProjectRoot:        projectRoot,
+		ImplementationsDir: implementationsDir,
+		ContextFiles:       contextFiles,
+		Waves:              waves,
 	}
 
 	return plan, nil
