@@ -239,6 +239,12 @@ func (r *Runner) executeObject(obj types.ObjectInWave, completedObjects *int, to
 	files := extractFiles(response)
 	if len(files) == 0 {
 		fmt.Printf("   ⚠️  Warning: no files extracted from response\n")
+		fmt.Printf("   💡 Response preview (first 500 chars):\n")
+		preview := response
+		if len(preview) > 500 {
+			preview = preview[:500] + "..."
+		}
+		fmt.Printf("   %s\n", strings.ReplaceAll(preview, "\n", "\n   "))
 	} else {
 		fmt.Printf("   📦 Extracted %d file(s) from response\n", len(files))
 
@@ -260,19 +266,15 @@ func (r *Runner) executeObject(obj types.ObjectInWave, completedObjects *int, to
 }
 
 // extractFiles extracts files from Claude's response
-// Supports patterns like:
-// - `filename`:
-//   ```lang
-//   content
-//   ```
-// - ```lang:filename
-//   content
-//   ```
+// Supports multiple patterns:
+// - <file path="filename">```lang\ncontent\n```</file>
+// - `filename`:\n```lang\ncontent\n```
+// - ```lang:filename\ncontent\n```
 func extractFiles(response string) map[string]string {
 	files := make(map[string]string)
 
-	// Pattern 1: `filename`:\n```lang\ncontent\n```
-	pattern1 := regexp.MustCompile("`([^`]+)`:\\s*```[a-z]*\\s*([\\s\\S]*?)```")
+	// Pattern 1: <file path="filename">```lang\ncontent\n```</file>
+	pattern1 := regexp.MustCompile(`<file\s+path="([^"]+)">(?:\s*)` + "```[a-z]*\\s*([\\s\\S]*?)```" + `(?:\s*)</file>`)
 	matches1 := pattern1.FindAllStringSubmatch(response, -1)
 	for _, match := range matches1 {
 		if len(match) >= 3 {
@@ -282,14 +284,29 @@ func extractFiles(response string) map[string]string {
 		}
 	}
 
-	// Pattern 2: ```lang:filename\ncontent\n```
-	pattern2 := regexp.MustCompile("```[a-z]*:([^\\s]+)\\s*([\\s\\S]*?)```")
+	// Pattern 2: `filename`:\n```lang\ncontent\n```
+	pattern2 := regexp.MustCompile("`([^`]+)`:\\s*```[a-z]*\\s*([\\s\\S]*?)```")
 	matches2 := pattern2.FindAllStringSubmatch(response, -1)
 	for _, match := range matches2 {
 		if len(match) >= 3 {
 			filename := strings.TrimSpace(match[1])
 			content := strings.TrimSpace(match[2])
-			files[filename] = content
+			if _, exists := files[filename]; !exists {
+				files[filename] = content
+			}
+		}
+	}
+
+	// Pattern 3: ```lang:filename\ncontent\n```
+	pattern3 := regexp.MustCompile("```[a-z]*:([^\\s]+)\\s*([\\s\\S]*?)```")
+	matches3 := pattern3.FindAllStringSubmatch(response, -1)
+	for _, match := range matches3 {
+		if len(match) >= 3 {
+			filename := strings.TrimSpace(match[1])
+			content := strings.TrimSpace(match[2])
+			if _, exists := files[filename]; !exists {
+				files[filename] = content
+			}
 		}
 	}
 
