@@ -190,10 +190,10 @@ potter build --concurrency 4 ./poc/contracts/tsubo-todo-app.tsubo.yaml
 potter build --prompt-only ./poc/contracts/tsubo-todo-app.tsubo.yaml
 
 # 4. Start services after implementation
-potter run -d
+potter run ./poc/contracts/tsubo-todo-app.tsubo.yaml -d
 
 # 5. Run tests
-potter verify
+potter verify ./poc/contracts/tsubo-todo-app.tsubo.yaml
 ```
 
 ### Run PoC (Tsubo TODO Application)
@@ -206,14 +206,14 @@ cd tsubo
 # Build Potter CLI
 go build -o potter ./cmd/potter
 
-# Check implementation plan
+# Generate implementation with AI
 potter build ./poc/contracts/tsubo-todo-app.tsubo.yaml
 
 # Start implemented services
-potter run -d
+potter run ./poc/contracts/tsubo-todo-app.tsubo.yaml -d
 
 # Integration tests
-potter verify
+potter verify ./poc/contracts/tsubo-todo-app.tsubo.yaml
 ```
 
 **Included Domains (Solid Objects):**

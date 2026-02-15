@@ -190,10 +190,10 @@ potter build --concurrency 4 ./poc/contracts/tsubo-todo-app.tsubo.yaml
 potter build --prompt-only ./poc/contracts/tsubo-todo-app.tsubo.yaml
 
 # 5. 実装完了後、サービスを起動
-potter run -d
+potter run ./poc/contracts/tsubo-todo-app.tsubo.yaml -d
 
 # 6. テスト実行
-potter verify
+potter verify ./poc/contracts/tsubo-todo-app.tsubo.yaml
 ```
 
 ### PoC の実行（Tsubo TODO アプリケーション）
@@ -204,16 +204,16 @@ git clone https://github.com/staka121/tsubo.git
 cd tsubo
 
 # Potter CLI をビルド
-go build -o potter ./cmd/tsubo
+go build -o potter ./cmd/potter
 
-# 実装プランを確認
+# AI による実装生成
 potter build ./poc/contracts/tsubo-todo-app.tsubo.yaml
 
 # 実装済みサービスを起動
-potter run -d
+potter run ./poc/contracts/tsubo-todo-app.tsubo.yaml -d
 
 # 統合テスト
-potter verify
+potter verify ./poc/contracts/tsubo-todo-app.tsubo.yaml
 ```
 
 **含まれるドメイン（固体オブジェクト）:**
