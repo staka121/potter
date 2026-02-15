@@ -30,15 +30,15 @@ Potter (craftsman) creates pots (Tsubo), and AI implements each solid object (do
    ┌─────────────────────────────────────┐
    │  Tsubo (Pot) = Entire Application   │  ← Humans decide
    │                                     │
-   │  ┌──────────┐  ┌──────────┐        │
-   │  │  TODO    │  │   User   │  ...   │  ← Solid Objects
-   │  │ Contract │  │ Contract │        │     (Domains)
-   │  │  ┌────┐  │  │  ┌────┐  │        │
-   │  │  │Impl│  │  │  │Impl│  │        │  ← AI decides
-   │  │  └────┘  │  │  └────┘  │        │
-   │  └──────────┘  └──────────┘        │
+   │  ┌──────────┐  ┌──────────┐         │
+   │  │  TODO    │  │   User   │  ...    │  ← Solid Objects
+   │  │ Contract │  │ Contract │         │     (Domains)
+   │  │  ┌────┐  │  │  ┌────┐  │         │
+   │  │  │Impl│  │  │  │Impl│  │         │  ← AI decides
+   │  │  └────┘  │  │  └────┘  │         │
+   │  └──────────┘  └──────────┘         │
    │       ↓              ↓              │
-   │  todo-service   user-service       │  ← Microservices
+   │  todo-service   user-service        │  ← Microservices
    └─────────────────────────────────────┘
 ```
 
@@ -232,12 +232,12 @@ potter verify
              │
              ▼
 ┌─────────────────────────────────────────┐
-│          potter CLI (Go)                 │
-│  - Contract parsing                      │
-│  - Dependency analysis                   │
-│  - Wave generation (execution order)     │
-│  - AI auto-implementation (Claude API)   │
-│  - Verification, testing, startup        │
+│          potter CLI (Go)                │
+│  - Contract parsing                     │
+│  - Dependency analysis                  │
+│  - Wave generation (execution order)    │
+│  - AI auto-implementation (Claude API)  │
+│  - Verification, testing, startup       │
 └────────────┬────────────────────────────┘
              │
              ▼ (Default: AI implementation)
