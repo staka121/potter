@@ -89,6 +89,71 @@ go build -o tsubo ./cmd/tsubo
 go install ./cmd/tsubo
 ```
 
+### API キー設定（AI 自動実装を使う場合）
+
+Tsubo の AI 駆動実装機能（`tsubo build --ai`）を使用するには、Claude API キーが必要です。
+
+#### 1. API キーの取得
+
+1. [Anthropic Console](https://console.anthropic.com/) にアクセス
+2. アカウントを作成またはログイン
+3. **API Keys** セクションで新しい API キーを作成
+4. キーをコピー（`sk-ant-` で始まる文字列）
+
+#### 2. API キーの設定
+
+以下のいずれかの方法で API キーを設定します：
+
+**方法 1: 環境変数（推奨）**
+
+```bash
+# 一時的に設定（現在のセッションのみ）
+export ANTHROPIC_API_KEY=sk-ant-xxxxx
+
+# 永続的に設定（~/.bashrc または ~/.zshrc に追加）
+echo 'export ANTHROPIC_API_KEY=sk-ant-xxxxx' >> ~/.bashrc
+source ~/.bashrc
+```
+
+**方法 2: .env ファイル（プロジェクトごと）**
+
+```bash
+# プロジェクトルートに .env ファイルを作成
+echo "ANTHROPIC_API_KEY=sk-ant-xxxxx" > .env
+
+# .env ファイルを読み込んで実行
+source .env
+tsubo build app.tsubo.yaml --ai
+```
+
+#### 3. 動作確認
+
+```bash
+# API キーが設定されているか確認
+echo $ANTHROPIC_API_KEY
+
+# AI 実装をテスト実行
+tsubo build ./poc/contracts/tsubo-todo-app.tsubo.yaml --ai
+```
+
+#### セキュリティに関する注意事項
+
+⚠️ **重要**: API キーは秘密情報です。以下の点に注意してください：
+
+- ✅ `.env` ファイルは `.gitignore` に追加する
+- ✅ API キーをソースコードにハードコードしない
+- ✅ パブリックリポジトリに API キーをコミットしない
+- ✅ 使用しないキーは Anthropic Console で無効化する
+- ✅ API キーは定期的にローテーションする
+
+#### API 使用料金
+
+Claude API は従量課金制です。詳細は [Anthropic Pricing](https://www.anthropic.com/pricing) を参照してください。
+
+- **モデル**: claude-sonnet-4-5-20250929（デフォルト）
+- **推定コスト**: 中規模サービス（~1000行）の実装で約 $0.50-2.00
+- **並行数制御**: `--concurrency` オプションでコストを管理可能
+
 ### AI駆動で新しいサービスを実装（完全自動化）
 
 ```bash
