@@ -23,7 +23,7 @@ const (
 func runBuild(args []string) error {
 	fs := flag.NewFlagSet("build", flag.ExitOnError)
 
-	aiFlag := fs.Bool("ai", false, "Execute implementation with Claude API")
+	promptOnlyFlag := fs.Bool("prompt-only", false, "Generate prompts only (skip AI implementation)")
 	concurrency := fs.Int("concurrency", 0, "Maximum parallel executions (0 = unlimited)")
 	helpFlag := fs.Bool("help", false, "Show help for build command")
 
@@ -63,12 +63,12 @@ func runBuild(args []string) error {
 	fmt.Printf("  Waves: %d\n", len(plan.Waves))
 	fmt.Println()
 
-	// Step 2: Execute or generate prompts
-	if *aiFlag {
-		return executeWithAI(plan, *concurrency)
+	// Step 2: Generate prompts or execute with AI
+	if *promptOnlyFlag {
+		return generatePromptsOnly(plan)
 	}
 
-	return generatePromptsOnly(plan)
+	return executeWithAI(plan, *concurrency)
 }
 
 func generatePlan(tsuboFile string) (*types.ImplementationPlan, error) {
@@ -197,17 +197,19 @@ func printBuildHeader() {
 }
 
 func printBuildUsage() {
-	fmt.Println("Usage: potter build <tsubo-file> [options]")
+	fmt.Println("Usage: potter build [options] <tsubo-file>")
+	fmt.Println()
+	fmt.Println("By default, potter build executes AI-driven implementation.")
 	fmt.Println()
 	fmt.Println("Options:")
-	fmt.Println("  --ai                  Execute implementation with Claude API")
+	fmt.Println("  --prompt-only         Generate prompts only (skip AI implementation)")
 	fmt.Println("  --concurrency N       Maximum parallel executions (default: unlimited)")
 	fmt.Println("  --help                Show this help message")
 	fmt.Println()
 	fmt.Println("Examples:")
-	fmt.Println("  potter build app.tsubo.yaml")
-	fmt.Println("  potter build app.tsubo.yaml --ai")
-	fmt.Println("  potter build app.tsubo.yaml --ai --concurrency 4")
+	fmt.Println("  potter build app.tsubo.yaml                    # AI-driven implementation")
+	fmt.Println("  potter build --concurrency 4 app.tsubo.yaml    # Limit parallel execution")
+	fmt.Println("  potter build --prompt-only app.tsubo.yaml      # Generate prompts only")
 }
 
 func printBuildSummary(plan *types.ImplementationPlan) {
@@ -223,7 +225,7 @@ func printBuildSummary(plan *types.ImplementationPlan) {
 	fmt.Printf("%sNext steps:%s\n", colorGreen, colorReset)
 	fmt.Println("1. Review the generated prompts in /tmp/tsubo-prompt-*.md")
 	fmt.Println("2. Execute with AI:")
-	fmt.Println("   potter build <tsubo-file> --ai")
+	fmt.Println("   potter build <tsubo-file>")
 	fmt.Println()
 }
 

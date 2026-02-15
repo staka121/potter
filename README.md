@@ -96,7 +96,7 @@ go install ./cmd/potter
 
 ### API キー設定（AI 自動実装を使う場合）
 
-Potter の AI 駆動実装機能（`potter build --ai`）を使用するには、Claude API キーが必要です。
+Potter の AI 駆動実装機能（`potter build` コマンド）を使用するには、Claude API キーが必要です。
 
 #### 1. API キーの取得
 
@@ -128,7 +128,7 @@ echo "ANTHROPIC_API_KEY=sk-ant-xxxxx" > .env
 
 # .env ファイルを読み込んで実行
 source .env
-potter build app.tsubo.yaml --ai
+potter build app.tsubo.yaml
 ```
 
 #### 3. 動作確認
@@ -138,7 +138,7 @@ potter build app.tsubo.yaml --ai
 echo $ANTHROPIC_API_KEY
 
 # AI 実装をテスト実行
-potter build ./poc/contracts/tsubo-todo-app.tsubo.yaml --ai
+potter build ./poc/contracts/tsubo-todo-app.tsubo.yaml
 ```
 
 #### セキュリティに関する注意事項
@@ -168,17 +168,15 @@ potter new user-service
 # 2. .tsubo.yaml ファイルを作成・編集してサービスを追加
 # （例: poc/contracts/tsubo-todo-app.tsubo.yaml を参照）
 
-# 3. プロンプト生成のみ（手動実行用）
+# 3. AI駆動で自動実装（Claude API使用・デフォルト）
+export ANTHROPIC_API_KEY=your-api-key
 potter build ./poc/contracts/tsubo-todo-app.tsubo.yaml
 
-# または
-
-# 4. AI駆動で自動実装（Claude API使用）
-export ANTHROPIC_API_KEY=your-api-key
-potter build ./poc/contracts/tsubo-todo-app.tsubo.yaml --ai
-
 # 並行数を制限する場合
-potter build ./poc/contracts/tsubo-todo-app.tsubo.yaml --ai --concurrency 4
+potter build --concurrency 4 ./poc/contracts/tsubo-todo-app.tsubo.yaml
+
+# プロンプト生成のみ（手動実行用）
+potter build --prompt-only ./poc/contracts/tsubo-todo-app.tsubo.yaml
 
 # 5. 実装完了後、サービスを起動
 potter run -d
@@ -231,7 +229,7 @@ potter verify
 │  - 検証・テスト・起動                     │
 └────────────┬────────────────────────────┘
              │
-             ▼ (--ai フラグ使用時)
+             ▼ (デフォルトで AI 実装)
 ┌──────────┬──────────┬──────────┬────────┐
 │ Claude   │ Claude   │ Claude   │  ...   │
 │ (Wave 0) │ (Wave 0) │ (Wave 1) │        │
@@ -323,7 +321,7 @@ potter verify
 ```
 Contract 定義 (人間)
    ↓
-potter build --ai (自動解析 + AI実装) ← 完全自動化！
+potter build (自動解析 + AI実装) ← 完全自動化！
    ↓
 マイクロサービス実装 (100% Contract準拠)
    ↓
