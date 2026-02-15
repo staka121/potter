@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  todo-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tsubo-todo-service
+    ports:
+      - "8081:8080"
+    environment:
+      - PORT=8080
+      - USER_SERVICE_URL=http://user-service:8080
+    networks:
+      - tsubo-network
+    depends_on:
+      user-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  user-service:
+    image: tsubo-user-service:latest
+    container_name: tsubo-user-service
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+    networks:
+      - tsubo-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+networks:
+  tsubo-network:
+    name: tsubo-network
+    driver: bridge
