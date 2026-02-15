@@ -75,7 +75,7 @@ Tsubo は、これらの課題を「**壺＝コンテキストの境界**」と�
 
 ## クイックスタート
 
-### AI駆動で新しいサービスを実装
+### AI駆動で新しいサービスを実装（完全自動化）
 
 ```bash
 # 1. 実装プランを生成
@@ -86,14 +86,15 @@ Tsubo は、これらの課題を「**壺＝コンテキストの境界**」と�
 # - Wave 1: todo-service (user-service 完了後)
 # - Implementation plan: /tmp/tsubo-implementation-plan.json
 
-# 2. AI エージェントが並列実装を開始
-# （現在は Claude Code の Task tool を使用）
-# 各エージェントが以下を読み込んで実装:
-#   - PHILOSOPHY.md
-#   - DEVELOPMENT_PRINCIPLES.md
-#   - WHY_GO.md
-#   - CONTRACT_DESIGN.md
-#   - 該当する .object.yaml
+# 2a. 自動実行（Phase 2 - Claude API使用）
+export ANTHROPIC_API_KEY=your-api-key
+./tsubo-execute --execute /tmp/tsubo-implementation-plan.json
+
+# または
+
+# 2b. プロンプト生成のみ（Phase 1 - 手動実行用）
+./tsubo-execute /tmp/tsubo-implementation-plan.json
+# → /tmp/tsubo-prompt-*.md を AI エージェントに渡す
 
 # 3. 実装完了後、サービスを起動
 cd poc/implementations/user-service
@@ -203,7 +204,7 @@ docker-compose up -d
 
 ## プロジェクト状況
 
-**現在のステータス: ✅ PoC 完成 - AI駆動の並列実装が動作**
+**現在のステータス: ✅ 完全自動化パイプライン完成**
 
 - [x] **基本思想の整理**
 - [x] **サービス定義フォーマットの仕様策定**（Contract Design）
@@ -224,25 +225,49 @@ docker-compose up -d
     - [x] テスト（100% Contract 準拠）
   - [x] docker-compose による全体のオーケストレーション
   - [x] 統合テスト（ドメイン間連携の確認）
-- [x] **オーケストレーターの実装**
-  - [x] tsubo-plan (Go) - Contract解析と実装プラン生成
-  - [x] 依存関係の自動解析
-  - [x] Wave（実装順序）の自動決定
-  - [x] JSON形式の実装プラン出力
-- [x] **AI駆動での並列実装（PoC）**
-  - [x] Wave 0: user-service を AI が実装
-  - [x] Wave 1: todo-service を AI が実装（依存解決後）
-  - [x] 並列実装の実証完了
+- [x] **実装ツールチェーン完成**
+  - [x] **tsubo-plan** (Go) - Contract解析と実装プラン生成
+    - [x] 依存関係の自動解析
+    - [x] Wave（実装順序）の自動決定
+    - [x] JSON形式の実装プラン出力
+  - [x] **tsubo-execute Phase 1** - プロンプト生成
+    - [x] 包括的な実装プロンプト生成
+    - [x] コンテキストファイル埋め込み
+    - [x] Contract 埋め込み
+  - [x] **tsubo-execute Phase 2** - Claude API 自動実行 ✨NEW
+    - [x] Claude API クライアント実装
+    - [x] Wave 単位の並列実行
+    - [x] 依存関係に基づく順次実行
+    - [x] リアルタイム進捗表示
+    - [x] エラーハンドリング
+    - [x] 実行サマリー
+
+### 完成した自動化パイプライン
+
+```
+Contract 定義 (人間)
+   ↓
+tsubo-plan (自動解析)
+   ↓
+tsubo-execute --execute (AI実装) ← 完全自動化！
+   ↓
+マイクロサービス実装 (100% Contract準拠)
+```
 
 ### 次のマイルストーン
 
 - [ ] tsubo-plan の機能拡張
   - [ ] より複雑な依存関係グラフのサポート
   - [ ] 実装プランの可視化
-  - [ ] AI エージェント起動の自動化
-- [ ] 検証エンジンの強化
+  - [ ] サイクル検出
+- [ ] tsubo-execute の強化
+  - [ ] リトライロジック
+  - [ ] 部分的な再実行
+  - [ ] 複数モデルのサポート
+- [ ] 検証エンジンの実装
   - [ ] Contract 準拠チェックの自動化
   - [ ] パフォーマンステスト
+  - [ ] セキュリティスキャン
 - [ ] 他言語サポート
   - [ ] TypeScript サービス生成
   - [ ] Python サービス生成
@@ -260,7 +285,8 @@ docker-compose up -d
 - [なぜ Go 言語か（WHY_GO.md）](./docs/WHY_GO.md) - Go 言語選択の理由
 
 ### ツール
-- [tsubo-plan（cmd/tsubo-plan/README.md）](./cmd/tsubo-plan/README.md) - 実装プランニングツール
+- [tsubo-plan（cmd/tsubo-plan/README.md）](./cmd/tsubo-plan/README.md) - Contract解析・実装プランニング
+- [tsubo-execute（cmd/tsubo-execute/README.md）](./cmd/tsubo-execute/README.md) - プロンプト生成・Claude API自動実行
 
 ## コントリビューション
 
@@ -316,12 +342,15 @@ Tsubo は以下の原則に基づいて開発されます：
 
 ---
 
-**Status:** ✅ **Proof of Concept Complete**
-**Version:** 0.3.0
-**Latest Achievement:** AI駆動の並列実装実証完了
+**Status:** ✅ **Full Automation Pipeline Complete**
+**Version:** 0.4.0
+**Latest Achievement:** 完全自動化パイプライン完成（Contract → 実装の全自動化）
 
 **実装済み:**
 - ✅ tsubo-plan (Go) - 実装プランニングツール
+- ✅ tsubo-execute (Go) - プロンプト生成・Claude API 自動実行
+  - Phase 1: AI エージェント向けプロンプト生成
+  - Phase 2: Claude API による完全自動実装
 - ✅ 壺（アプリケーション全体）: tsubo-todo-app
 - ✅ 2つの固体オブジェクト（AI が並列実装）:
   - user-service (Wave 0) - ユーザー管理
@@ -331,4 +360,4 @@ Tsubo は以下の原則に基づいて開発されます：
 - ✅ 100% Contract 準拠
 - ✅ 統合テスト完備
 
-**Tsubo の核心機能「AI駆動の並列実装」が完全に動作しています！** 🎉
+**Contract を書くだけで、AI が自動的にマイクロサービスを実装する完全自動化パイプラインが完成しました！** 🎉
