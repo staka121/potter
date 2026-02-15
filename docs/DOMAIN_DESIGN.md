@@ -8,10 +8,10 @@
 ┌─────────────────────────────────────────┐
 │   Tsubo (Pot) = Application             │  ← Humans define
 │                                         │
-│  ┌──────────┐  ┌──────────┐            │
-│  │  TODO    │  │   User   │   ...      │  ← Solid Objects
-│  │  Domain  │  │  Domain  │            │     (Microservices)
-│  └──────────┘  └──────────┘            │
+│  ┌──────────┐  ┌──────────┐             │
+│  │  TODO    │  │   User   │   ...       │  ← Solid Objects
+│  │  Domain  │  │  Domain  │             │     (Microservices)
+│  └──────────┘  └──────────┘             │
 │                                         │
 └─────────────────────────────────────────┘
 
