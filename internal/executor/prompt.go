@@ -67,6 +67,11 @@ func (pg *PromptGenerator) GeneratePrompt(obj types.ObjectInWave) (string, error
 	if len(obj.Dependencies) > 0 {
 		prompt.WriteString("## Step 3: Understand dependencies\n\n")
 		prompt.WriteString(fmt.Sprintf("This service depends on: %v\n\n", obj.Dependencies))
+		prompt.WriteString("**IMPORTANT: Use correct service URLs for dependencies:**\n")
+		prompt.WriteString("- Service URLs are based on container names and their assigned ports\n")
+		prompt.WriteString("- Example: If user-service uses port 8084, the URL is http://user-service:8084\n")
+		prompt.WriteString("- Check the tsubo.yaml for correct port assignments\n")
+		prompt.WriteString("- DO NOT assume default ports like 8080\n\n")
 		prompt.WriteString("Make sure to:\n")
 		prompt.WriteString("- Implement service-to-service communication\n")
 		prompt.WriteString("- Handle dependency failures gracefully\n")
@@ -82,7 +87,8 @@ func (pg *PromptGenerator) GeneratePrompt(obj types.ObjectInWave) (string, error
 	prompt.WriteString(fmt.Sprintf("## Step %d: Implement the service\n\n", stepNum))
 	prompt.WriteString("**Your task:**\n")
 	prompt.WriteString("- Implement " + obj.Name + " in Go language (Go 1.22) following the contract exactly\n")
-	prompt.WriteString("- Create all necessary files in: " + getImplementationDir(pg.plan.ProjectRoot, obj.Name) + "\n")
+	prompt.WriteString("- Create all necessary files in: " + filepath.Join(pg.plan.ImplementationsDir, obj.Name) + "\n")
+	prompt.WriteString(fmt.Sprintf("- **IMPORTANT: Use port %d for this service** (defined in tsubo.yaml)\n", obj.Port))
 	prompt.WriteString("- Required files:\n")
 	prompt.WriteString("  - Go source files (main.go, handlers, models, storage, etc.)\n")
 	prompt.WriteString("  - go.mod\n")
@@ -100,9 +106,46 @@ func (pg *PromptGenerator) GeneratePrompt(obj types.ObjectInWave) (string, error
 	prompt.WriteString("- All API endpoints must match the contract specification\n")
 	prompt.WriteString("- Handle all edge cases specified in the contract\n")
 	prompt.WriteString("- Use UUIDv4 for IDs\n")
-	prompt.WriteString("- Follow Go best practices (standard library, simple code)\n\n")
+	prompt.WriteString("- Follow Go best practices (standard library, simple code)\n")
+	prompt.WriteString("- **CRITICAL**: Do NOT import unused packages (Go will fail to compile)\n")
+	prompt.WriteString("- Only import packages that are actually used in the code\n\n")
+	prompt.WriteString("**Port configuration:**\n")
+	prompt.WriteString(fmt.Sprintf("- The service MUST listen on port %d\n", obj.Port))
+	prompt.WriteString(fmt.Sprintf("- In Dockerfile, use EXPOSE %d\n", obj.Port))
+	prompt.WriteString(fmt.Sprintf("- In docker-compose.yml, map port %d:%d\n", obj.Port, obj.Port))
+	prompt.WriteString("- This port is allocated to avoid conflicts with other services\n\n")
+	prompt.WriteString("**Docker network configuration:**\n")
+	prompt.WriteString("- Use network name: tsubo-network\n")
+	prompt.WriteString("- In docker-compose.yml, declare the network as external:\n")
+	prompt.WriteString("  ```yaml\n")
+	prompt.WriteString("  networks:\n")
+	prompt.WriteString("    tsubo-network:\n")
+	prompt.WriteString("      external: true\n")
+	prompt.WriteString("  ```\n")
+	prompt.WriteString("- This allows all services to communicate via the shared network\n\n")
+	prompt.WriteString("**Docker Compose format:**\n")
+	prompt.WriteString("- DO NOT include 'version' field in docker-compose.yml (it's obsolete)\n")
+	prompt.WriteString("- Start directly with 'services:' at the top level\n\n")
 
-	prompt.WriteString(fmt.Sprintf("**Output directory:** %s\n\n", getImplementationDir(pg.plan.ProjectRoot, obj.Name)))
+	serviceDir := filepath.Join(pg.plan.ImplementationsDir, obj.Name)
+	prompt.WriteString(fmt.Sprintf("**Output directory:** %s\n\n", serviceDir))
+
+	// Output format instructions
+	prompt.WriteString("## Output Format\n\n")
+	prompt.WriteString("**CRITICAL:** You MUST output each file using the following exact format:\n\n")
+	prompt.WriteString("```\n")
+	prompt.WriteString("<create_file>\n")
+	prompt.WriteString("<path>relative/path/to/file.go</path>\n")
+	prompt.WriteString("<content>\n")
+	prompt.WriteString("// File content here\n")
+	prompt.WriteString("</content>\n")
+	prompt.WriteString("</create_file>\n")
+	prompt.WriteString("```\n\n")
+	prompt.WriteString("**Important notes about file paths:**\n")
+	prompt.WriteString(fmt.Sprintf("- All paths should be relative to the service directory\n"))
+	prompt.WriteString("- Example: `main.go` (for top-level files)\n")
+	prompt.WriteString("- Example: `handlers/user.go` (for nested files)\n")
+	prompt.WriteString("- DO NOT include the full path like `poc/implementations/user-service/main.go`\n\n")
 	prompt.WriteString("Start implementation now.\n")
 
 	return prompt.String(), nil
@@ -132,9 +175,4 @@ func readFileContent(filePath string) (string, error) {
 		return "", err
 	}
 	return string(data), nil
-}
-
-// getImplementationDir returns the implementation directory for a service
-func getImplementationDir(projectRoot, serviceName string) string {
-	return filepath.Join(projectRoot, "poc", "implementations", serviceName)
 }

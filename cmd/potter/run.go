@@ -6,6 +6,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	"github.com/staka121/potter/internal/parser"
 )
 
 func runRun(args []string) error {
@@ -31,7 +33,7 @@ func runRun(args []string) error {
 	// Get tsubo file path (required)
 	remainingArgs := fs.Args()
 	if len(remainingArgs) == 0 {
-		return fmt.Errorf("tsubo file path required. Usage: potter run <tsubo-file> [options]")
+		return fmt.Errorf("tsubo file path required. Usage: potter run [options] <tsubo-file>")
 	}
 
 	tsuboFile := remainingArgs[0]
@@ -42,22 +44,70 @@ func runRun(args []string) error {
 		return fmt.Errorf("implementations directory not found: %s\nRun 'potter build %s' first to generate implementations", implDir, tsuboFile)
 	}
 
-	// Find all services
+	// Parse tsubo file to get network and startup order
+	tsuboDef, err := parser.ParseTsuboFile(tsuboFile)
+	if err != nil {
+		return fmt.Errorf("failed to parse tsubo file: %w", err)
+	}
+
+	// Create Docker network if it doesn't exist
+	// Using the network name defined in tsubo.yaml deployment.network.name
+	networkName := "tsubo-network"
+	fmt.Printf("Ensuring Docker network '%s' exists...\n", networkName)
+
+	// Check if network exists
+	checkCmd := exec.Command("docker", "network", "inspect", networkName)
+	if err := checkCmd.Run(); err != nil {
+		// Network doesn't exist, create it
+		createCmd := exec.Command("docker", "network", "create", networkName)
+		createCmd.Stdout = os.Stdout
+		createCmd.Stderr = os.Stderr
+		if err := createCmd.Run(); err != nil {
+			return fmt.Errorf("failed to create network %s: %w", networkName, err)
+		}
+		fmt.Printf("  %s✓ Network created%s\n", colorGreen, colorReset)
+	} else {
+		fmt.Printf("  %s✓ Network already exists%s\n", colorGreen, colorReset)
+	}
+	fmt.Println()
+
+	// Build service list based on dependencies
+	// First, services without dependencies, then services with dependencies
+	var servicesNoDeps []string
+	var servicesWithDeps []string
+
+	// Create a map for quick lookup
+	serviceMap := make(map[string]bool)
 	entries, err := os.ReadDir(implDir)
 	if err != nil {
 		return fmt.Errorf("failed to read implementations directory: %w", err)
 	}
-
-	services := []string{}
 	for _, entry := range entries {
 		if entry.IsDir() {
-			// Filter by service name if specified
-			if *serviceFlag != "" && entry.Name() != *serviceFlag {
-				continue
-			}
-			services = append(services, entry.Name())
+			serviceMap[entry.Name()] = true
 		}
 	}
+
+	// Separate services by dependencies
+	for _, objRef := range tsuboDef.Objects {
+		// Skip if not in implementations directory
+		if !serviceMap[objRef.Name] {
+			continue
+		}
+		// Filter by service name if specified
+		if *serviceFlag != "" && objRef.Name != *serviceFlag {
+			continue
+		}
+
+		if len(objRef.Dependencies) == 0 {
+			servicesNoDeps = append(servicesNoDeps, objRef.Name)
+		} else {
+			servicesWithDeps = append(servicesWithDeps, objRef.Name)
+		}
+	}
+
+	// Combine: services without dependencies first, then services with dependencies
+	services := append(servicesNoDeps, servicesWithDeps...)
 
 	if len(services) == 0 {
 		if *serviceFlag != "" {
@@ -68,7 +118,7 @@ func runRun(args []string) error {
 
 	fmt.Printf("Starting %d service(s)...\n\n", len(services))
 
-	// Start each service
+	// Always start services in detached mode first
 	for _, service := range services {
 		fmt.Printf("%s[%s]%s\n", colorYellow, service, colorReset)
 
@@ -82,11 +132,8 @@ func runRun(args []string) error {
 			continue
 		}
 
-		// Run docker-compose up
-		cmdArgs := []string{"compose", "up"}
-		if *detachFlag {
-			cmdArgs = append(cmdArgs, "-d")
-		}
+		// Always run docker-compose up -d to start services in background
+		cmdArgs := []string{"compose", "up", "-d"}
 
 		cmd := exec.Command("docker", cmdArgs...)
 		cmd.Dir = serviceDir
@@ -107,24 +154,62 @@ func runRun(args []string) error {
 
 	if *detachFlag {
 		fmt.Println("Services are running in the background.")
-		fmt.Println("To stop services, run: docker compose down in each service directory")
+		fmt.Println("To view logs: docker compose logs -f")
+		fmt.Println("To stop services: docker compose down in each service directory")
+	} else {
+		// If not detached, show logs from all services
+		fmt.Println("Showing logs from all services (Ctrl+C to stop)...")
+		fmt.Println()
+
+		// Collect all service directories
+		var serviceDirs []string
+		for _, service := range services {
+			serviceDir := filepath.Join(implDir, service)
+			composeFile := filepath.Join(serviceDir, "docker-compose.yml")
+			if _, err := os.Stat(composeFile); err == nil {
+				serviceDirs = append(serviceDirs, serviceDir)
+			}
+		}
+
+		// Show logs from all services (follow mode)
+		// We'll use the first service directory and show logs for all containers
+		if len(serviceDirs) > 0 {
+			// Get all container names
+			var containerNames []string
+			for _, service := range services {
+				containerNames = append(containerNames, service)
+			}
+
+			// Use docker compose logs -f with container names
+			cmdArgs := []string{"logs", "-f"}
+			cmdArgs = append(cmdArgs, containerNames...)
+
+			cmd := exec.Command("docker", cmdArgs...)
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+
+			if err := cmd.Run(); err != nil {
+				// Ignore error (user might have pressed Ctrl+C)
+				return nil
+			}
+		}
 	}
 
 	return nil
 }
 
 func printRunUsage() {
-	fmt.Println("Usage: potter run <tsubo-file> [options]")
+	fmt.Println("Usage: potter run [options] <tsubo-file>")
 	fmt.Println()
 	fmt.Println("Starts all services using docker-compose")
 	fmt.Println()
 	fmt.Println("Options:")
-	fmt.Println("  --service NAME    Run specific service only")
 	fmt.Println("  -d                Run in detached mode (background)")
+	fmt.Println("  --service NAME    Run specific service only")
 	fmt.Println("  --help            Show this help message")
 	fmt.Println()
 	fmt.Println("Examples:")
 	fmt.Println("  potter run ./poc/contracts/app.tsubo.yaml              # Start all services")
-	fmt.Println("  potter run ./poc/contracts/app.tsubo.yaml -d           # Start in background")
-	fmt.Println("  potter run ./poc/contracts/app.tsubo.yaml --service user  # Start user-service only")
+	fmt.Println("  potter run -d ./poc/contracts/app.tsubo.yaml           # Start in background")
+	fmt.Println("  potter run --service user ./poc/contracts/app.tsubo.yaml  # Start user-service only")
 }

@@ -26,6 +26,7 @@ func GenerateWaves(objects []analyzer.ObjectWithDeps) []types.Wave {
 			Name:         obj.Name,
 			Contract:     obj.Contract,
 			Dependencies: obj.Dependencies,
+			Port:         obj.Port,
 		}
 
 		waveMap[depth] = append(waveMap[depth], objInWave)

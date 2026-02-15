@@ -23,4 +23,5 @@ type ObjectInWave struct {
 	Name         string   `json:"name"`
 	Contract     string   `json:"contract"`
 	Dependencies []string `json:"dependencies"`
+	Port         int      `json:"port"`
 }

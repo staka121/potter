@@ -303,20 +303,36 @@ func (r *Runner) executeObject(obj types.ObjectInWave, completedObjects *int, to
 
 // extractFiles extracts files from Claude's response
 // Supports multiple patterns:
+// - <create_file><path>filename</path><content>...</content></create_file>
 // - <file path="filename">```lang\ncontent\n```</file>
+// - <source_file path="filename">```lang\ncontent\n```</source_file>
 // - `filename`:\n```lang\ncontent\n```
 // - ```lang:filename\ncontent\n```
 func extractFiles(response string) map[string]string {
 	files := make(map[string]string)
 
+	// Pattern 0: <create_file><path>filename</path><content>content</content></create_file>
+	pattern0 := regexp.MustCompile(`<create_file>\s*<path>([^<]+)</path>\s*<content>([\s\S]*?)</content>\s*</create_file>`)
+	matches0 := pattern0.FindAllStringSubmatch(response, -1)
+	for _, match := range matches0 {
+		if len(match) >= 3 {
+			filename := strings.TrimSpace(match[1])
+			content := strings.TrimSpace(match[2])
+			files[filename] = content
+		}
+	}
+
 	// Pattern 1: <file path="filename">```lang\ncontent\n```</file>
-	pattern1 := regexp.MustCompile(`<file\s+path="([^"]+)">(?:\s*)` + "```[a-z]*\\s*([\\s\\S]*?)```" + `(?:\s*)</file>`)
+	// Also supports <source_file path="filename">```lang\ncontent\n```</source_file>
+	pattern1 := regexp.MustCompile(`<(?:file|source_file)\s+path="([^"]+)">(?:\s*)` + "```[a-z]*\\s*([\\s\\S]*?)```" + `(?:\s*)</(?:file|source_file)>`)
 	matches1 := pattern1.FindAllStringSubmatch(response, -1)
 	for _, match := range matches1 {
 		if len(match) >= 3 {
 			filename := strings.TrimSpace(match[1])
 			content := strings.TrimSpace(match[2])
-			files[filename] = content
+			if _, exists := files[filename]; !exists {
+				files[filename] = content
+			}
 		}
 	}
 

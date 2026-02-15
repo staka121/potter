@@ -13,6 +13,7 @@ type ObjectWithDeps struct {
 	Name         string
 	Contract     string
 	Dependencies []string
+	Port         int
 }
 
 // AnalyzeDependencies analyzes all objects and extracts their service dependencies
@@ -39,6 +40,7 @@ func AnalyzeDependencies(tsubo *types.TsuboDefinition, contractsDir string) ([]O
 			Name:         objectDef.Service.Name,
 			Contract:     contractPath,
 			Dependencies: serviceDeps,
+			Port:         objRef.Runtime.Port,
 		})
 	}
 
