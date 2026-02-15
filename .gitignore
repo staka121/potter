@@ -1,10 +1,6 @@
 # Binaries (executable files only, not directories)
 /tsubo
-/tsubo-plan
-/tsubo-execute
 /cmd/tsubo/tsubo
-/cmd/tsubo-plan/tsubo-plan
-/cmd/tsubo-execute/tsubo-execute
 
 # Go build artifacts
 *.exe

@@ -1,4 +1,4 @@
-# Tsubo（坪）
+# Tsubo（壺）
 
 > AI駆動開発のためのマイクロサービスフレームワーク
 
@@ -218,16 +218,17 @@ tsubo verify
              │
              ▼
 ┌─────────────────────────────────────────┐
-│      tsubo-plan (Go)                    │
+│          tsubo CLI (Go)                 │
 │  - Contract 解析                         │
 │  - 依存関係分析                          │
 │  - Wave 生成（実装順序決定）             │
-│  - Implementation Plan 出力             │
+│  - AI 自動実装（Claude API）             │
+│  - 検証・テスト・起動                     │
 └────────────┬────────────────────────────┘
              │
-             ▼ JSON Plan
+             ▼ (--ai フラグ使用時)
 ┌──────────┬──────────┬──────────┬────────┐
-│ AI Agent │ AI Agent │ AI Agent │  ...   │
+│ Claude   │ Claude   │ Claude   │  ...   │
 │ (Wave 0) │ (Wave 0) │ (Wave 1) │        │
 │          │          │          │        │
 │ user-    │ other-   │ todo-    │        │
@@ -245,10 +246,12 @@ tsubo verify
 
 ## 技術スタック
 
-- **フレームワーク:** Go 1.22
-  - tsubo-plan: Contract解析・プランニングツール
-  - 型安全なYAMLパース
-  - 依存関係解析
+- **CLI フレームワーク:** Go 1.22
+  - tsubo: 統一コマンドラインインターフェース
+  - Contract 解析・プランニング
+  - Claude API 統合
+  - 型安全な YAML パース
+  - 依存関係解析（トポロジカルソート）
   - シングルバイナリ配布
 
 - **生成サービス:** Go 1.22（推奨）
@@ -296,42 +299,40 @@ tsubo verify
     - [x] テスト（100% Contract 準拠）
   - [x] docker-compose による全体のオーケストレーション
   - [x] 統合テスト（ドメイン間連携の確認）
-- [x] **実装ツールチェーン完成**
-  - [x] **tsubo-plan** (Go) - Contract解析と実装プラン生成
-    - [x] 依存関係の自動解析
-    - [x] Wave（実装順序）の自動決定
-    - [x] JSON形式の実装プラン出力
-  - [x] **tsubo-execute Phase 1** - プロンプト生成
-    - [x] 包括的な実装プロンプト生成
-    - [x] コンテキストファイル埋め込み
-    - [x] Contract 埋め込み
-  - [x] **tsubo-execute Phase 2** - Claude API 自動実行 ✨NEW
+- [x] **統一 CLI 完成**
+  - [x] **tsubo** (Go) - オールインワンコマンドラインツール
+    - [x] `tsubo new` - サービステンプレート生成
+    - [x] `tsubo build` - Contract 解析・AI 実装・プロンプト生成
+    - [x] `tsubo verify` - Contract 検証・テスト実行
+    - [x] `tsubo run` - サービス起動（Docker Compose）
+    - [x] 依存関係の自動解析（トポロジカルソート）
+    - [x] Wave（実装順序）の自動決定（複数 Wave 対応）
     - [x] Claude API クライアント実装
+    - [x] 並行数制御（`--concurrency`）
     - [x] Wave 単位の並列実行
-    - [x] 依存関係に基づく順次実行
     - [x] リアルタイム進捗表示
     - [x] エラーハンドリング
-    - [x] 実行サマリー
 
 ### 完成した自動化パイプライン
 
 ```
 Contract 定義 (人間)
    ↓
-tsubo-plan (自動解析)
-   ↓
-tsubo-execute --execute (AI実装) ← 完全自動化！
+tsubo build --ai (自動解析 + AI実装) ← 完全自動化！
    ↓
 マイクロサービス実装 (100% Contract準拠)
+   ↓
+tsubo verify (検証)
+   ↓
+tsubo run (起動)
 ```
 
 ### 次のマイルストーン
 
-- [ ] tsubo-plan の機能拡張
+- [ ] tsubo CLI の機能拡張
   - [x] より複雑な依存関係グラフのサポート（トポロジカルソート実装）
   - [ ] 実装プランの可視化
   - [x] サイクル検出（循環依存の検出）
-- [ ] tsubo-execute の強化
   - [ ] リトライロジック
   - [ ] 部分的な再実行
   - [ ] 複数モデルのサポート
@@ -355,9 +356,12 @@ tsubo-execute --execute (AI実装) ← 完全自動化！
 - [ファイルフォーマット（docs/FILE_FORMATS.md）](./docs/FILE_FORMATS.md) - .tsubo.yaml と .object.yaml
 - [なぜ Go 言語か（WHY_GO.md）](./docs/WHY_GO.md) - Go 言語選択の理由
 
-### ツール
-- [tsubo-plan（cmd/tsubo-plan/README.md）](./cmd/tsubo-plan/README.md) - Contract解析・実装プランニング
-- [tsubo-execute（cmd/tsubo-execute/README.md）](./cmd/tsubo-execute/README.md) - プロンプト生成・Claude API自動実行
+### CLI コマンド
+- **tsubo** - 統一コマンドラインインターフェース
+  - `tsubo new` - サービステンプレート生成
+  - `tsubo build` - Contract 解析・AI 実装
+  - `tsubo verify` - Contract 検証・テスト実行
+  - `tsubo run` - サービス起動
 
 ## コントリビューション
 
@@ -420,13 +424,13 @@ Tsubo は以下の原則に基づいて開発されます：
 **実装済み:**
 - ✅ **tsubo CLI** - 統一コマンドラインインターフェース
   - `tsubo new` - サービステンプレート生成
-  - `tsubo build` - プラン生成・AI 実装（plan + execute 統合）
+  - `tsubo build` - Contract 解析・AI 実装
   - `tsubo verify` - Contract 検証・テスト実行
   - `tsubo run` - サービス起動
   - 並行数制御（`--concurrency`）
   - トポロジカルソートによる複数 Wave 対応
-- ✅ tsubo-plan (Go) - 実装プランニングツール（後方互換）
-- ✅ tsubo-execute (Go) - プロンプト生成・Claude API 自動実行（後方互換）
+  - Claude API 統合
+  - プロンプト生成機能
 - ✅ 壺（アプリケーション全体）: tsubo-todo-app
 - ✅ 2つの固体オブジェクト（AI が並列実装）:
   - user-service (Wave 0) - ユーザー管理
