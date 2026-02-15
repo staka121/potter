@@ -275,7 +275,7 @@ tsubo-execute --execute (AI実装) ← 完全自動化！
 ## ドキュメント
 
 ### 核心思想
-- [設計思想（PHILOSOPHY.md）](./PHILOSOPHY.md) - Tsubo の核心的な考え方
+- [設計思想（PHILOSOPHY.md）](./docs/PHILOSOPHY.md) - Tsubo の核心的な考え方
 - [ドメイン設計（DOMAIN_DESIGN.md）](./docs/DOMAIN_DESIGN.md) - 壺と固体オブジェクトの関係
 
 ### 開発ガイド

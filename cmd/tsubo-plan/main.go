@@ -166,7 +166,7 @@ func printSummary(tsuboName string, objectCount int, planFile string) {
 
 func verifyContextFiles(projectRoot string) {
 	contextFiles := []string{
-		"PHILOSOPHY.md",
+		"docs/PHILOSOPHY.md",
 		"docs/DEVELOPMENT_PRINCIPLES.md",
 		"docs/WHY_GO.md",
 		"docs/CONTRACT_DESIGN.md",

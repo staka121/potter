@@ -35,7 +35,7 @@ func GeneratePlan(
 // getContextFiles returns the list of context files that AI agents should read
 func getContextFiles(projectRoot string) []string {
 	contextFiles := []string{
-		filepath.Join(projectRoot, "PHILOSOPHY.md"),
+		filepath.Join(projectRoot, "docs", "PHILOSOPHY.md"),
 		filepath.Join(projectRoot, "docs", "DEVELOPMENT_PRINCIPLES.md"),
 		filepath.Join(projectRoot, "docs", "WHY_GO.md"),
 		filepath.Join(projectRoot, "docs", "CONTRACT_DESIGN.md"),
