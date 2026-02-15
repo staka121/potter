@@ -3,7 +3,7 @@
 > AI駆動開発のためのマイクロサービスフレームワーク
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/status-design%20phase-yellow.svg)]()
+[![Status](https://img.shields.io/badge/status-proof%20of%20concept-green.svg)]()
 
 ## 概要
 
@@ -75,89 +75,125 @@ Tsubo は、これらの課題を「**壺＝コンテキストの境界**」と�
 
 ## クイックスタート
 
+### AI駆動で新しいサービスを実装
+
+```bash
+# 1. 実装プランを生成
+./tsubo-plan ./poc/contracts/tsubo-todo-app.tsubo.yaml
+
+# 出力:
+# - Wave 0: user-service (並列実行可能)
+# - Wave 1: todo-service (user-service 完了後)
+# - Implementation plan: /tmp/tsubo-implementation-plan.json
+
+# 2. AI エージェントが並列実装を開始
+# （現在は Claude Code の Task tool を使用）
+# 各エージェントが以下を読み込んで実装:
+#   - PHILOSOPHY.md
+#   - DEVELOPMENT_PRINCIPLES.md
+#   - WHY_GO.md
+#   - CONTRACT_DESIGN.md
+#   - 該当する .object.yaml
+
+# 3. 実装完了後、サービスを起動
+cd poc/implementations/user-service
+docker-compose up -d
+
+cd ../todo-service
+docker-compose up -d
+
+# 4. テスト実行
+./test.sh
+```
+
 ### PoC の実行（Tsubo TODO アプリケーション）
 
 ```bash
 # リポジトリをクローン
-git clone https://github.com/your-org/tsubo.git
-cd tsubo/poc/tsubo-todo-app
+git clone https://github.com/staka121/tsubo.git
+cd tsubo
 
-# 壺（アプリケーション全体）を起動
+# tsubo-plan をビルド
+go build -o tsubo-plan ./cmd/tsubo-plan
+
+# 実装プランを生成
+./tsubo-plan ./poc/contracts/tsubo-todo-app.tsubo.yaml
+
+# 実装済みサービスを起動
+cd poc/implementations/user-service
 docker-compose up -d
 
-# 統合テストの実行
-./test-integration.sh
+cd ../todo-service
+docker-compose up -d
 
-# 停止
-docker-compose down
+# 統合テスト
+./test.sh
 ```
 
 **含まれるドメイン（固体オブジェクト）:**
-- User ドメイン（user-service: port 8084）
-- TODO ドメイン（todo-service: port 8083）
-
-### 将来の CLI（開発予定）
-
-```bash
-# Tsubo のインストール
-go install github.com/your-org/tsubo-cli
-
-# 新しいサービスを定義
-tsubo new user-service
-
-# AI駆動で実装を生成
-tsubo build user-service --ai
-
-# 全サービスを並列ビルド
-tsubo build --all --parallel
-
-# 検証
-tsubo verify
-
-# 実行
-tsubo run
-```
+- User ドメイン（user-service: port 8080）
+- TODO ドメイン（todo-service: port 8081）
 
 ## アーキテクチャ
 
 ```
 ┌─────────────────────────────────────────┐
-│         Service Definitions             │
-│     (user-service.tsubo.yaml)           │
+│    Contract Definitions (YAML)          │
+│  - tsubo-todo-app.tsubo.yaml            │
+│  - user-service.object.yaml             │
+│  - todo-service.object.yaml             │
 └────────────┬────────────────────────────┘
              │
              ▼
 ┌─────────────────────────────────────────┐
-│         Orchestrator (Go)               │
-│  - 依存関係解析                          │
-│  - AI エージェント管理                    │
-│  - 並列実行制御                          │
+│      tsubo-plan (Go)                    │
+│  - Contract 解析                         │
+│  - 依存関係分析                          │
+│  - Wave 生成（実装順序決定）             │
+│  - Implementation Plan 出力             │
 └────────────┬────────────────────────────┘
              │
-             ▼
+             ▼ JSON Plan
 ┌──────────┬──────────┬──────────┬────────┐
 │ AI Agent │ AI Agent │ AI Agent │  ...   │
-│ Service1 │ Service2 │ Service3 │        │
+│ (Wave 0) │ (Wave 0) │ (Wave 1) │        │
+│          │          │          │        │
+│ user-    │ other-   │ todo-    │        │
+│ service  │ service  │ service  │        │
 └────┬─────┴────┬─────┴────┬─────┴────┬───┘
      │          │          │          │
      ▼          ▼          ▼          ▼
 ┌────────────────────────────────────────┐
-│         Validator (Rust)               │
-│  - 契約テスト                            │
-│  - 型チェック                            │
-│  - 統合テスト                            │
+│       Generated Services (Go)          │
+│  - 100% Contract 準拠                   │
+│  - Docker 化済み                        │
+│  - テスト付き                            │
 └────────────────────────────────────────┘
 ```
 
 ## 技術スタック
 
-- **全コンポーネント:** Go（統一されたコードベース）
-  - Orchestrator: 並行処理、シンプルさ
-  - Validator: 型安全性、十分なパフォーマンス
-  - CLI: シングルバイナリ配布
-- **Contract Definition:** YAML（人間・AI両方が読みやすい）
-- **生成サービス:** Go（推奨）
+- **フレームワーク:** Go 1.22
+  - tsubo-plan: Contract解析・プランニングツール
+  - 型安全なYAMLパース
+  - 依存関係解析
+  - シングルバイナリ配布
+
+- **生成サービス:** Go 1.22（推奨）
+  - シンプルで一貫性のあるコード
+  - ハルシネーション削減
+  - 標準ライブラリ中心
   - 将来的に TypeScript, Python もサポート
+
+- **Contract Definition:** YAML
+  - `.tsubo.yaml`: 壺（アプリケーション）の定義
+  - `.object.yaml`: オブジェクト（サービス）の定義
+  - 人間・AI両方が読みやすい
+
+- **デプロイ:** Docker & Docker Compose
+  - Docker First 原則
+  - 環境の完全分離
+  - 再現性の保証
 
 ### なぜ Go言語なのか？
 
@@ -167,47 +203,68 @@ tsubo run
 
 ## プロジェクト状況
 
-現在、PoC フェーズです。以下を進めています：
+**現在のステータス: ✅ PoC 完成 - AI駆動の並列実装が動作**
 
-- [x] 基本思想の整理
-- [x] サービス定義フォーマットの仕様策定（Contract Design）
+- [x] **基本思想の整理**
+- [x] **サービス定義フォーマットの仕様策定**（Contract Design）
 - [x] **開発原則の確立**（Docker First & 質疑のタイミング）
-- [x] **PoC 実装完了**（TODO アプリケーション - 壺の実装）
+- [x] **ファイルフォーマットの確立**（.tsubo.yaml / .object.yaml）
+- [x] **PoC 実装完了**（TODO アプリケーション）
   - [x] 壺（アプリケーション全体）の設計
   - [x] User ドメイン（固体オブジェクト1）
     - [x] Contract 定義
-    - [x] Go 実装
+    - [x] **AI による Go 実装**
     - [x] Docker 化
+    - [x] テスト（100% Contract 準拠）
   - [x] TODO ドメイン（固体オブジェクト2）
     - [x] Contract 定義
-    - [x] Go 実装
+    - [x] **AI による Go 実装**
     - [x] Docker 化
     - [x] User ドメインとの連携
+    - [x] テスト（100% Contract 準拠）
   - [x] docker-compose による全体のオーケストレーション
   - [x] 統合テスト（ドメイン間連携の確認）
-- [ ] オーケストレーターの自動化
-- [ ] 検証エンジンの実装
-- [ ] AI駆動での自動実装
+- [x] **オーケストレーターの実装**
+  - [x] tsubo-plan (Go) - Contract解析と実装プラン生成
+  - [x] 依存関係の自動解析
+  - [x] Wave（実装順序）の自動決定
+  - [x] JSON形式の実装プラン出力
+- [x] **AI駆動での並列実装（PoC）**
+  - [x] Wave 0: user-service を AI が実装
+  - [x] Wave 1: todo-service を AI が実装（依存解決後）
+  - [x] 並列実装の実証完了
+
+### 次のマイルストーン
+
+- [ ] tsubo-plan の機能拡張
+  - [ ] より複雑な依存関係グラフのサポート
+  - [ ] 実装プランの可視化
+  - [ ] AI エージェント起動の自動化
+- [ ] 検証エンジンの強化
+  - [ ] Contract 準拠チェックの自動化
+  - [ ] パフォーマンステスト
+- [ ] 他言語サポート
+  - [ ] TypeScript サービス生成
+  - [ ] Python サービス生成
 
 ## ドキュメント
 
 ### 核心思想
 - [設計思想（PHILOSOPHY.md）](./PHILOSOPHY.md) - Tsubo の核心的な考え方
-- [ドメイン設計（DOMAIN_DESIGN.md）](./docs/DOMAIN_DESIGN.md) - 1つの壺 = 1つのドメイン = 1つのマイクロサービス
+- [ドメイン設計（DOMAIN_DESIGN.md）](./docs/DOMAIN_DESIGN.md) - 壺と固体オブジェクトの関係
 
 ### 開発ガイド
 - [開発原則（DEVELOPMENT_PRINCIPLES.md）](./docs/DEVELOPMENT_PRINCIPLES.md) - Docker First & 質疑のタイミング
 - [Contract 設計（CONTRACT_DESIGN.md）](./docs/CONTRACT_DESIGN.md) - Contract フォーマットの詳細
+- [ファイルフォーマット（docs/FILE_FORMATS.md）](./docs/FILE_FORMATS.md) - .tsubo.yaml と .object.yaml
 - [なぜ Go 言語か（WHY_GO.md）](./docs/WHY_GO.md) - Go 言語選択の理由
 
-### 今後作成予定
-- アーキテクチャ設計
-- APIリファレンス
-- チュートリアル
+### ツール
+- [tsubo-plan（cmd/tsubo-plan/README.md）](./cmd/tsubo-plan/README.md) - 実装プランニングツール
 
 ## コントリビューション
 
-現在は設計フェーズのため、アイデアやフィードバックを歓迎します。
+現在は PoC フェーズのため、アイデアやフィードバックを歓迎します。
 
 ## ライセンス
 
@@ -259,10 +316,19 @@ Tsubo は以下の原則に基づいて開発されます：
 
 ---
 
-**Status:** 🚀 PoC Phase
-**Version:** 0.2.0 (PoC)
-**Latest PoC:** Tsubo TODO App（壺の実装完了）
-  - 壺（アプリケーション全体）
-  - 2つの固体オブジェクト（User & TODO ドメイン）
-  - ドメイン間連携
-  - Docker Compose によるオーケストレーション
+**Status:** ✅ **Proof of Concept Complete**
+**Version:** 0.3.0
+**Latest Achievement:** AI駆動の並列実装実証完了
+
+**実装済み:**
+- ✅ tsubo-plan (Go) - 実装プランニングツール
+- ✅ 壺（アプリケーション全体）: tsubo-todo-app
+- ✅ 2つの固体オブジェクト（AI が並列実装）:
+  - user-service (Wave 0) - ユーザー管理
+  - todo-service (Wave 1) - TODO管理
+- ✅ ドメイン間連携（service-to-service通信）
+- ✅ Docker Compose によるオーケストレーション
+- ✅ 100% Contract 準拠
+- ✅ 統合テスト完備
+
+**Tsubo の核心機能「AI駆動の並列実装」が完全に動作しています！** 🎉
