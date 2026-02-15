@@ -28,22 +28,18 @@ func runRun(args []string) error {
 	fmt.Printf("%s========================================%s\n", colorBlue, colorReset)
 	fmt.Println()
 
-	// Get tsubo file path (optional)
+	// Get tsubo file path (required)
 	remainingArgs := fs.Args()
-	var implDir string
-
-	if len(remainingArgs) > 0 {
-		// Tsubo file specified
-		tsuboFile := remainingArgs[0]
-		tsuboDir := filepath.Dir(tsuboFile)
-		implDir = filepath.Join(tsuboDir, "implementations")
-	} else {
-		// Default to poc/implementations for backward compatibility
-		implDir = "poc/implementations"
+	if len(remainingArgs) == 0 {
+		return fmt.Errorf("tsubo file path required. Usage: potter run <tsubo-file> [options]")
 	}
 
+	tsuboFile := remainingArgs[0]
+	tsuboDir := filepath.Dir(tsuboFile)
+	implDir := filepath.Join(tsuboDir, "implementations")
+
 	if _, err := os.Stat(implDir); os.IsNotExist(err) {
-		return fmt.Errorf("implementations directory not found: %s", implDir)
+		return fmt.Errorf("implementations directory not found: %s\nRun 'potter build %s' first to generate implementations", implDir, tsuboFile)
 	}
 
 	// Find all services
@@ -118,7 +114,7 @@ func runRun(args []string) error {
 }
 
 func printRunUsage() {
-	fmt.Println("Usage: potter run [options] [tsubo-file]")
+	fmt.Println("Usage: potter run <tsubo-file> [options]")
 	fmt.Println()
 	fmt.Println("Starts all services using docker-compose")
 	fmt.Println()
@@ -128,8 +124,7 @@ func printRunUsage() {
 	fmt.Println("  --help            Show this help message")
 	fmt.Println()
 	fmt.Println("Examples:")
-	fmt.Println("  potter run                                      # Start all services (uses poc/implementations)")
-	fmt.Println("  potter run -d                                   # Start all services (background)")
-	fmt.Println("  potter run ./poc/contracts/app.tsubo.yaml       # Start services from tsubo file")
-	fmt.Println("  potter run --service user                       # Start user-service only")
+	fmt.Println("  potter run ./poc/contracts/app.tsubo.yaml              # Start all services")
+	fmt.Println("  potter run ./poc/contracts/app.tsubo.yaml -d           # Start in background")
+	fmt.Println("  potter run ./poc/contracts/app.tsubo.yaml --service user  # Start user-service only")
 }
