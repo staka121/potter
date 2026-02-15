@@ -160,8 +160,9 @@ func generatePromptsOnly(plan *types.ImplementationPlan) error {
 	generator := executor.NewPromptGenerator(plan)
 
 	// Create timestamped temp directory
+	// Format: /tmp/potter/{app-name}/yyyymmddhhmmss
 	timestamp := time.Now().Format("20060102150405")
-	tempDir := filepath.Join("/tmp", timestamp)
+	tempDir := filepath.Join("/tmp", "potter", plan.Tsubo, timestamp)
 	if err := os.MkdirAll(tempDir, 0755); err != nil {
 		return fmt.Errorf("failed to create temp directory: %w", err)
 	}

@@ -40,8 +40,9 @@ func NewRunner(plan *types.ImplementationPlan) (*Runner, error) {
 	}
 
 	// Create timestamped temp directory
+	// Format: /tmp/potter/{app-name}/yyyymmddhhmmss
 	timestamp := time.Now().Format("20060102150405")
-	tempDir := filepath.Join("/tmp", timestamp)
+	tempDir := filepath.Join("/tmp", "potter", plan.Tsubo, timestamp)
 	if err := os.MkdirAll(tempDir, 0755); err != nil {
 		return nil, fmt.Errorf("failed to create temp directory: %w", err)
 	}
