@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"strings"
@@ -14,26 +15,36 @@ const (
 	colorBlue   = "\033[0;34m"
 	colorGreen  = "\033[0;32m"
 	colorYellow = "\033[1;33m"
+	colorRed    = "\033[0;31m"
+)
+
+var (
+	executeFlag = flag.Bool("execute", false, "Execute implementation with Claude API (requires ANTHROPIC_API_KEY)")
+	helpFlag    = flag.Bool("help", false, "Show help message")
 )
 
 func main() {
 	if err := run(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		fmt.Fprintf(os.Stderr, "%sError: %v%s\n", colorRed, err, colorReset)
 		os.Exit(1)
 	}
 }
 
 func run() error {
-	// Parse arguments
-	if len(os.Args) != 2 {
-		fmt.Println("Usage: tsubo-execute <plan.json>")
-		fmt.Println("")
-		fmt.Println("Example:")
-		fmt.Println("  tsubo-execute /tmp/tsubo-implementation-plan.json")
+	flag.Parse()
+
+	if *helpFlag {
+		printUsage()
+		return nil
+	}
+
+	args := flag.Args()
+	if len(args) != 1 {
+		printUsage()
 		return fmt.Errorf("invalid arguments")
 	}
 
-	planFile := os.Args[1]
+	planFile := args[0]
 
 	// Verify file exists
 	if _, err := os.Stat(planFile); os.IsNotExist(err) {
@@ -54,6 +65,42 @@ func run() error {
 	fmt.Printf("  Waves: %d\n", len(plan.Waves))
 	fmt.Println()
 
+	if *executeFlag {
+		// Phase 2: Execute with Claude API
+		return executeWithAPI(plan)
+	}
+
+	// Phase 1: Generate prompts only
+	return generatePromptsOnly(plan)
+}
+
+func executeWithAPI(plan *types.ImplementationPlan) error {
+	fmt.Printf("%s[Step 2] Executing with Claude API%s\n", colorYellow, colorReset)
+	fmt.Printf("%sWARNING: This will use Claude API credits%s\n", colorYellow, colorReset)
+	fmt.Println()
+
+	// Create runner
+	runner, err := executor.NewRunner(plan)
+	if err != nil {
+		return fmt.Errorf("failed to create runner: %w", err)
+	}
+
+	// Execute all waves
+	results, err := runner.ExecuteAll()
+	if err != nil {
+		fmt.Printf("\n%sExecution failed: %v%s\n", colorRed, err, colorReset)
+		executor.PrintSummary(results)
+		return err
+	}
+
+	// Print summary
+	executor.PrintSummary(results)
+
+	fmt.Printf("\n%s✓ All implementations completed successfully!%s\n", colorGreen, colorReset)
+	return nil
+}
+
+func generatePromptsOnly(plan *types.ImplementationPlan) error {
 	// Generate prompts
 	fmt.Printf("%s[Step 2] Generating implementation prompts%s\n", colorYellow, colorReset)
 	generator := executor.NewPromptGenerator(plan)
@@ -107,6 +154,22 @@ func printHeader() {
 	fmt.Println()
 }
 
+func printUsage() {
+	fmt.Println("Usage: tsubo-execute [OPTIONS] <plan.json>")
+	fmt.Println("")
+	fmt.Println("Options:")
+	fmt.Println("  --execute    Execute implementation with Claude API (requires ANTHROPIC_API_KEY)")
+	fmt.Println("  --help       Show this help message")
+	fmt.Println("")
+	fmt.Println("Examples:")
+	fmt.Println("  # Phase 1: Generate prompts only (default)")
+	fmt.Println("  tsubo-execute /tmp/tsubo-implementation-plan.json")
+	fmt.Println("")
+	fmt.Println("  # Phase 2: Execute with Claude API")
+	fmt.Println("  export ANTHROPIC_API_KEY=your-api-key")
+	fmt.Println("  tsubo-execute --execute /tmp/tsubo-implementation-plan.json")
+}
+
 func printSummary(plan *types.ImplementationPlan) {
 	fmt.Printf("%s========================================%s\n", colorBlue, colorReset)
 	fmt.Printf("%sPrompts Generated%s\n", colorBlue, colorReset)
@@ -119,7 +182,9 @@ func printSummary(plan *types.ImplementationPlan) {
 
 	fmt.Printf("%sNext steps:%s\n", colorGreen, colorReset)
 	fmt.Println("1. Review the generated prompts in /tmp/tsubo-prompt-*.md")
-	fmt.Println("2. Use AI agents (e.g., Claude Code Task tool) to implement each service")
+	fmt.Println("2. Choose execution method:")
+	fmt.Println("   a) Manual: Use AI agents (e.g., Claude Code Task tool)")
+	fmt.Println("   b) Automated: Run with --execute flag (requires ANTHROPIC_API_KEY)")
 	fmt.Println("3. Follow the wave order:")
 
 	for _, wave := range plan.Waves {
