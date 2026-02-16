@@ -31,6 +31,8 @@ func run() error {
 		return runVerify(os.Args[2:])
 	case "run":
 		return runRun(os.Args[2:])
+	case "deploy":
+		return runDeploy(os.Args[2:])
 	case "version", "--version", "-v":
 		fmt.Printf("potter version %s\n", version)
 		return nil
@@ -55,8 +57,9 @@ func printUsage() {
 	fmt.Println("  build <tsubo-file>         Generate implementation plan and execute")
 	fmt.Println("  verify <tsubo-file>        Verify contract compliance and run tests")
 	fmt.Println("  run [options] <tsubo-file> Start all services with docker-compose")
-	fmt.Println("  version                Show version information")
-	fmt.Println("  help                   Show this help message")
+	fmt.Println("  deploy <subcommand>        Kubernetes deployment tools")
+	fmt.Println("  version                    Show version information")
+	fmt.Println("  help                       Show this help message")
 	fmt.Println()
 	fmt.Println("Examples:")
 	fmt.Println("  potter new                                   # Generate example service")
@@ -66,5 +69,6 @@ func printUsage() {
 	fmt.Println("  potter build --prompt-only app.tsubo.yaml    # Generate prompts only")
 	fmt.Println("  potter verify app.tsubo.yaml                 # Run contract verification")
 	fmt.Println("  potter run -d app.tsubo.yaml                 # Start all services in background")
+	fmt.Println("  potter deploy generate app.tsubo.yaml        # Generate Kubernetes manifests")
 	fmt.Println()
 }

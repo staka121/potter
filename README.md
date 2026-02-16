@@ -89,6 +89,12 @@ Automatically execute contract tests, type checking, and integration tests for q
 ### 🚀 Fast Development Cycle
 Implement microservices 3-5x faster than traditional methods.
 
+### ☸️ Multi-Environment Support (Docker Compose ⇄ Kubernetes)
+Single Tsubo definition deploys to both local development and production:
+- **Local**: Docker Compose + gateway-service (simple, fast)
+- **Production**: Kubernetes + Ingress (scalable, resilient)
+- Automatic K8s manifest generation with `potter deploy generate`
+
 ## Quick Start
 
 ### Installation
@@ -372,13 +378,16 @@ potter run (Startup)
 - [DEVELOPMENT_PRINCIPLES.md](./docs/DEVELOPMENT_PRINCIPLES.md) ([日本語](./docs/ja/DEVELOPMENT_PRINCIPLES.md)) - Docker First & questioning timing
 - [CONTRACT_DESIGN.md](./docs/CONTRACT_DESIGN.md) ([日本語](./docs/ja/CONTRACT_DESIGN.md)) - Contract format details
 - [WHY_GO.md](./docs/WHY_GO.md) ([日本語](./docs/ja/WHY_GO.md)) - Why Go language
+- [KUBERNETES.md](./docs/KUBERNETES.md) ([日本語](./docs/ja/KUBERNETES.md)) - Kubernetes integration and multi-environment deployment
 
 ### CLI Commands
 - **potter** - Unified command-line interface
   - `potter new` - Service template generation
   - `potter build` - Contract parsing, AI implementation
   - `potter verify` - Contract verification, test execution
-  - `potter run` - Service startup
+  - `potter run` - Service startup (Docker Compose)
+  - `potter deploy` - Kubernetes deployment tools
+    - `potter deploy generate` - Generate K8s manifests with Ingress
 
 ## Contributing
 
@@ -437,27 +446,32 @@ See [DEVELOPMENT_PRINCIPLES.md](./docs/DEVELOPMENT_PRINCIPLES.md) for details.
 
 ---
 
-**Status:** ✅ **Unified CLI Complete**
-**Version:** 0.5.0
-**Latest Achievement:** Unified CLI implementation complete (all operations possible with `potter` command)
+**Status:** ✅ **Kubernetes Integration Complete**
+**Version:** 0.6.0
+**Latest Achievement:** Multi-environment deployment (Docker Compose ⇄ Kubernetes)
 
 **Implemented:**
 - ✅ **potter CLI** - Unified command-line interface
   - `potter new` - Service template generation
   - `potter build` - Contract parsing, AI implementation
   - `potter verify` - Contract verification, test execution
-  - `potter run` - Service startup
+  - `potter run` - Service startup (Docker Compose)
+  - `potter deploy` - Kubernetes deployment
+    - `potter deploy generate` - K8s manifest generation with Ingress
   - Concurrency control (`--concurrency`)
   - Multi-wave support via topological sort
   - Claude API integration
-  - Prompt generation feature
+- ✅ **Multi-Environment Support**
+  - Docker Compose (local development with gateway-service)
+  - Kubernetes (production with Ingress)
+  - Same Tsubo definition for both environments
+  - Auto-generated K8s manifests (Deployment, Service, Ingress)
 - ✅ Pot (entire application): tsubo-todo-app
 - ✅ 2 solid objects (AI parallel implementation):
   - user-service (Wave 0) - User management
   - todo-service (Wave 1) - TODO management
 - ✅ Inter-domain communication (service-to-service)
-- ✅ Orchestration with Docker Compose
 - ✅ 100% Contract compliant
 - ✅ Complete integration tests
 
-**Everything from service creation to implementation, verification, and startup is complete with a single `potter` command!** 🎉
+**From local development to production deployment - all with a single Tsubo definition!** 🎉
