@@ -226,6 +226,144 @@ potter verify ./poc/contracts/tsubo-todo-app.tsubo.yaml
 - User Domain (user-service: port 8080)
 - TODO Domain (todo-service: port 8081)
 
+### Production Deployment (Kubernetes)
+
+Potter provides seamless deployment to Kubernetes with automatic manifest generation and deployment.
+
+#### Prerequisites
+
+- Kubernetes cluster (local: minikube/kind, cloud: GKE/EKS/AKS)
+- kubectl configured to access your cluster
+- Docker images pushed to a registry (optional for local clusters)
+
+#### Deployment Steps
+
+**1. Generate Kubernetes Manifests**
+
+```bash
+# Basic generation (uses default namespace)
+potter deploy generate ./poc/contracts/tsubo-todo-app.tsubo.yaml
+
+# Production with custom configuration
+potter deploy generate \
+  --namespace production \
+  --ingress-host api.example.com \
+  --registry docker.io/your-org \
+  --tag v1.0.0 \
+  --replicas 3 \
+  ./poc/contracts/tsubo-todo-app.tsubo.yaml
+```
+
+This generates:
+- `k8s/namespace.yaml` - Kubernetes namespace
+- `k8s/deployment-*.yaml` - Service deployments with health probes
+- `k8s/service-*.yaml` - ClusterIP services for internal communication
+- `k8s/ingress.yaml` - Ingress for external access (replaces gateway-service)
+
+**2. Deploy to Cluster**
+
+```bash
+# Apply manifests with automatic rollout monitoring
+potter deploy apply
+
+# Or with custom options
+potter deploy apply --namespace production --timeout 10m
+```
+
+The `apply` command will:
+- ✓ Check kubectl availability
+- ✓ Apply all manifests to the cluster
+- ✓ Wait for deployment rollout completion
+- ✓ Display pod and service status
+
+**3. Verify Deployment**
+
+```bash
+# Check pods
+kubectl get pods -n production
+
+# Check services
+kubectl get svc -n production
+
+# Check ingress
+kubectl get ingress -n production
+
+# View logs
+kubectl logs -f deployment/user-service -n production
+```
+
+**4. Access Your Services**
+
+If using Ingress with a hostname:
+```bash
+# Add to /etc/hosts for local testing
+echo "127.0.0.1 api.example.com" | sudo tee -a /etc/hosts
+
+# Access via Ingress
+curl http://api.example.com/api/v1/users
+curl http://api.example.com/api/v1/todos
+```
+
+For production with real DNS:
+```bash
+# Services are accessible via your configured domain
+curl https://api.example.com/api/v1/users
+```
+
+#### Complete Workflow Example
+
+```bash
+# 1. Define services (already done in PoC)
+ls ./poc/contracts/
+# → tsubo-todo-app.tsubo.yaml
+# → user-service.object.yaml
+# → todo-service.object.yaml
+
+# 2. AI implements services
+potter build ./poc/contracts/tsubo-todo-app.tsubo.yaml
+
+# 3. Test locally with Docker Compose
+potter run ./poc/contracts/tsubo-todo-app.tsubo.yaml
+curl http://localhost:8080/api/v1/users
+
+# 4. Generate K8s manifests for production
+potter deploy generate \
+  --namespace prod \
+  --ingress-host api.prod.example.com \
+  --registry gcr.io/my-project \
+  --tag $(git rev-parse --short HEAD) \
+  ./poc/contracts/tsubo-todo-app.tsubo.yaml
+
+# 5. Deploy to production cluster
+potter deploy apply --namespace prod
+
+# 6. Verify deployment
+kubectl get all -n prod
+
+# Done! 🎉
+```
+
+#### Key Differences: Local vs Production
+
+| Aspect | Local (Docker Compose) | Production (Kubernetes) |
+|--------|----------------------|------------------------|
+| **Gateway** | gateway-service (auto-started) | Ingress (nginx/traefik) |
+| **Access** | localhost:8080 | api.example.com |
+| **Scaling** | Manual | Auto-scaling (HPA) |
+| **Monitoring** | Docker logs | K8s native (Prometheus/Grafana) |
+| **Deployment** | `potter run` | `potter deploy apply` |
+
+#### Best Practices
+
+- **Image Registry**: Always use a registry for production (Docker Hub, GCR, ECR, ACR)
+- **Versioning**: Tag images with git commit SHA or semantic version
+- **Namespaces**: Use separate namespaces for dev/staging/production
+- **Resource Limits**: Review and adjust resource requests/limits in generated manifests
+- **Monitoring**: Set up health checks and observability tools
+- **Secrets**: Use Kubernetes Secrets for sensitive data (not yet automated by Potter)
+
+For detailed Kubernetes integration guide, see [KUBERNETES.md](./docs/KUBERNETES.md).
+
 ## Architecture
 
 ```

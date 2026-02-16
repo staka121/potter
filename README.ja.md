@@ -226,6 +226,144 @@ potter verify ./poc/contracts/tsubo-todo-app.tsubo.yaml
 - User ドメイン（user-service: port 8080）
 - TODO ドメイン（todo-service: port 8081）
 
+### 本番環境へのデプロイ（Kubernetes）
+
+Potter は Kubernetes への自動マニフェスト生成とデプロイをシームレスに提供します。
+
+#### 前提条件
+
+- Kubernetes クラスタ（ローカル: minikube/kind、クラウド: GKE/EKS/AKS）
+- kubectl がクラスタにアクセスできるよう設定済み
+- Docker イメージをレジストリにプッシュ（ローカルクラスタの場合はオプション）
+
+#### デプロイ手順
+
+**1. Kubernetes マニフェストを生成**
+
+```bash
+# 基本的な生成（デフォルト namespace を使用）
+potter deploy generate ./poc/contracts/tsubo-todo-app.tsubo.yaml
+
+# カスタム設定で本番環境用に生成
+potter deploy generate \
+  --namespace production \
+  --ingress-host api.example.com \
+  --registry docker.io/your-org \
+  --tag v1.0.0 \
+  --replicas 3 \
+  ./poc/contracts/tsubo-todo-app.tsubo.yaml
+```
+
+以下が生成されます：
+- `k8s/namespace.yaml` - Kubernetes namespace
+- `k8s/deployment-*.yaml` - ヘルスプローブ付きサービス Deployment
+- `k8s/service-*.yaml` - 内部通信用 ClusterIP Service
+- `k8s/ingress.yaml` - 外部アクセス用 Ingress（gateway-service を置き換え）
+
+**2. クラスタにデプロイ**
+
+```bash
+# 自動ロールアウト監視付きでマニフェストを適用
+potter deploy apply
+
+# またはカスタムオプション付き
+potter deploy apply --namespace production --timeout 10m
+```
+
+`apply` コマンドは以下を実行します：
+- ✓ kubectl の利用可能性チェック
+- ✓ すべてのマニフェストをクラスタに適用
+- ✓ デプロイメントのロールアウト完了を待機
+- ✓ Pod と Service のステータスを表示
+
+**3. デプロイを確認**
+
+```bash
+# Pod を確認
+kubectl get pods -n production
+
+# Service を確認
+kubectl get svc -n production
+
+# Ingress を確認
+kubectl get ingress -n production
+
+# ログを確認
+kubectl logs -f deployment/user-service -n production
+```
+
+**4. サービスにアクセス**
+
+Ingress をホスト名で使用する場合：
+```bash
+# ローカルテスト用に /etc/hosts に追加
+echo "127.0.0.1 api.example.com" | sudo tee -a /etc/hosts
+
+# Ingress 経由でアクセス
+curl http://api.example.com/api/v1/users
+curl http://api.example.com/api/v1/todos
+```
+
+実際の DNS を使用する本番環境の場合：
+```bash
+# 設定したドメイン経由でサービスにアクセス
+curl https://api.example.com/api/v1/users
+```
+
+#### 完全なワークフロー例
+
+```bash
+# 1. サービスを定義（PoC で既に完了）
+ls ./poc/contracts/
+# → tsubo-todo-app.tsubo.yaml
+# → user-service.object.yaml
+# → todo-service.object.yaml
+
+# 2. AI がサービスを実装
+potter build ./poc/contracts/tsubo-todo-app.tsubo.yaml
+
+# 3. Docker Compose でローカルテスト
+potter run ./poc/contracts/tsubo-todo-app.tsubo.yaml
+curl http://localhost:8080/api/v1/users
+
+# 4. 本番環境用の K8s マニフェストを生成
+potter deploy generate \
+  --namespace prod \
+  --ingress-host api.prod.example.com \
+  --registry gcr.io/my-project \
+  --tag $(git rev-parse --short HEAD) \
+  ./poc/contracts/tsubo-todo-app.tsubo.yaml
+
+# 5. 本番クラスタにデプロイ
+potter deploy apply --namespace prod
+
+# 6. デプロイを確認
+kubectl get all -n prod
+
+# 完了！🎉
+```
+
+#### 主な違い：ローカル vs 本番
+
+| 項目 | ローカル（Docker Compose） | 本番（Kubernetes） |
+|------|--------------------------|-------------------|
+| **ゲートウェイ** | gateway-service（自動起動） | Ingress（nginx/traefik） |
+| **アクセス** | localhost:8080 | api.example.com |
+| **スケーリング** | 手動 | 自動スケーリング（HPA） |
+| **モニタリング** | Docker logs | K8s ネイティブ（Prometheus/Grafana） |
+| **デプロイ** | `potter run` | `potter deploy apply` |
+
+#### ベストプラクティス
+
+- **イメージレジストリ**: 本番環境では必ずレジストリを使用（Docker Hub、GCR、ECR、ACR）
+- **バージョニング**: イメージを git commit SHA またはセマンティックバージョンでタグ付け
+- **Namespace**: dev/staging/production で別々の namespace を使用
+- **リソース制限**: 生成されたマニフェストのリソース requests/limits を確認・調整
+- **モニタリング**: ヘルスチェックと可観測性ツールを設定
+- **シークレット**: 機密データには Kubernetes Secrets を使用（Potter では未自動化）
+
+詳細な Kubernetes 統合ガイドは [KUBERNETES.md](./docs/ja/KUBERNETES.md) を参照してください。
+
 ## アーキテクチャ
 
 ```
