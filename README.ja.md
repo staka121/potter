@@ -89,6 +89,12 @@ Potter は、これらの課題を「**壺＝コンテキストの境界**」と
 ### 🚀 高速な開発サイクル
 従来の3-5倍の速度でマイクロサービスを実装。
 
+### ☸️ マルチ環境サポート (Docker Compose ⇄ Kubernetes)
+単一の Tsubo 定義からローカル開発と本番環境の両方にデプロイ：
+- **ローカル**: Docker Compose + gateway-service（シンプル、高速）
+- **本番**: Kubernetes + Ingress（スケーラブル、回復力）
+- `potter deploy generate` で K8s マニフェストを自動生成
+
 ## クイックスタート
 
 ### インストール
@@ -372,13 +378,16 @@ potter run (起動)
 - [DEVELOPMENT_PRINCIPLES.md](./docs/DEVELOPMENT_PRINCIPLES.md) ([日本語](./docs/ja/DEVELOPMENT_PRINCIPLES.md)) - Docker First & 質疑のタイミング
 - [CONTRACT_DESIGN.md](./docs/CONTRACT_DESIGN.md) ([日本語](./docs/ja/CONTRACT_DESIGN.md)) - Contract フォーマットの詳細
 - [WHY_GO.md](./docs/WHY_GO.md) ([日本語](./docs/ja/WHY_GO.md)) - Go 言語選択の理由
+- [KUBERNETES.md](./docs/KUBERNETES.md) ([日本語](./docs/ja/KUBERNETES.md)) - Kubernetes 統合とマルチ環境デプロイ
 
 ### CLI コマンド
-- **tsubo** - 統一コマンドラインインターフェース
+- **potter** - 統一コマンドラインインターフェース
   - `potter new` - サービステンプレート生成
   - `potter build` - Contract 解析・AI 実装
   - `potter verify` - Contract 検証・テスト実行
-  - `potter run` - サービス起動
+  - `potter run` - サービス起動（Docker Compose）
+  - `potter deploy` - Kubernetes デプロイツール
+    - `potter deploy generate` - Ingress 付き K8s マニフェスト生成
 
 ## コントリビューション
 
@@ -434,27 +443,32 @@ Potter は以下の原則に基づいて開発されます：
 
 ---
 
-**Status:** ✅ **Unified CLI Complete**
-**Version:** 0.5.0
-**Latest Achievement:** 統一 CLI 実装完了（`tsubo` コマンドですべての操作が可能）
+**Status:** ✅ **Kubernetes 統合完了**
+**Version:** 0.6.0
+**Latest Achievement:** マルチ環境デプロイ（Docker Compose ⇄ Kubernetes）
 
 **実装済み:**
 - ✅ **potter CLI** - 統一コマンドラインインターフェース
   - `potter new` - サービステンプレート生成
   - `potter build` - Contract 解析・AI 実装
   - `potter verify` - Contract 検証・テスト実行
-  - `potter run` - サービス起動
+  - `potter run` - サービス起動（Docker Compose）
+  - `potter deploy` - Kubernetes デプロイ
+    - `potter deploy generate` - Ingress 付き K8s マニフェスト生成
   - 並行数制御（`--concurrency`）
   - トポロジカルソートによる複数 Wave 対応
   - Claude API 統合
-  - プロンプト生成機能
+- ✅ **マルチ環境サポート**
+  - Docker Compose（gateway-service でローカル開発）
+  - Kubernetes（Ingress で本番環境）
+  - 両環境で同じ Tsubo 定義を使用
+  - K8s マニフェスト自動生成（Deployment, Service, Ingress）
 - ✅ 壺（アプリケーション全体）: tsubo-todo-app
 - ✅ 2つの固体オブジェクト（AI が並列実装）:
   - user-service (Wave 0) - ユーザー管理
   - todo-service (Wave 1) - TODO管理
 - ✅ ドメイン間連携（service-to-service通信）
-- ✅ Docker Compose によるオーケストレーション
 - ✅ 100% Contract 準拠
 - ✅ 統合テスト完備
 
-**`tsubo` コマンド一つで、サービス作成から実装、検証、起動までのすべてが完結します！** 🎉
+**ローカル開発から本番デプロイまで - 単一の Tsubo 定義で実現！** 🎉
