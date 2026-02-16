@@ -534,7 +534,7 @@ Currently in PoC phase. Ideas and feedback are welcome.
 
 ## License
 
-MIT License (planned)
+MIT License - see the [LICENSE](LICENSE) file for details
 
 ## Name Origin
 

@@ -534,7 +534,7 @@ potter run (起動)
 
 ## ライセンス
 
-MIT License（予定）
+MIT License - 詳細は [LICENSE](LICENSE) ファイルを参照してください
 
 ## 名前の由来
 
