@@ -6,6 +6,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
+	"sync"
 
 	"github.com/staka121/potter/internal/parser"
 )
@@ -149,6 +151,34 @@ func runRun(args []string) error {
 		fmt.Println()
 	}
 
+	// Auto-start gateway-service if it exists (implicit API Gateway for Tsubo encapsulation)
+	// Gateway is started last, after all other services are up
+	if *serviceFlag == "" {
+		gatewayDir := filepath.Join(implDir, "gateway-service")
+		gatewayComposeFile := filepath.Join(gatewayDir, "docker-compose.yml")
+
+		if _, err := os.Stat(gatewayComposeFile); err == nil {
+			fmt.Printf("%s[gateway-service]%s (auto-generated API Gateway)\n", colorYellow, colorReset)
+
+			cmd := exec.Command("docker", "compose", "up", "-d")
+			cmd.Dir = gatewayDir
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+
+			if err := cmd.Run(); err != nil {
+				fmt.Printf("  %s✗ Failed to start gateway-service%s\n", colorRed, colorReset)
+				return fmt.Errorf("failed to start gateway-service: %w", err)
+			}
+
+			fmt.Printf("  %s✓ Gateway started (port 8080)%s\n", colorGreen, colorReset)
+			fmt.Printf("  %s壺（Tsubo）のエントリーポイント起動完了%s\n", colorGreen, colorReset)
+			fmt.Println()
+
+			// Add gateway to services list for log viewing
+			services = append(services, "gateway-service")
+		}
+	}
+
 	fmt.Printf("%s✓ All services started!%s\n", colorGreen, colorReset)
 	fmt.Println()
 
@@ -161,37 +191,42 @@ func runRun(args []string) error {
 		fmt.Println("Showing logs from all services (Ctrl+C to stop)...")
 		fmt.Println()
 
-		// Collect all service directories
-		var serviceDirs []string
+		// Collect container IDs from all services
+		var containerIDs []string
 		for _, service := range services {
 			serviceDir := filepath.Join(implDir, service)
 			composeFile := filepath.Join(serviceDir, "docker-compose.yml")
 			if _, err := os.Stat(composeFile); err == nil {
-				serviceDirs = append(serviceDirs, serviceDir)
+				// Get container IDs using docker compose ps -q
+				cmd := exec.Command("docker", "compose", "ps", "-q")
+				cmd.Dir = serviceDir
+				output, err := cmd.Output()
+				if err == nil && len(output) > 0 {
+					// Split by newline in case multiple containers per service
+					ids := strings.Split(strings.TrimSpace(string(output)), "\n")
+					for _, id := range ids {
+						if id != "" {
+							containerIDs = append(containerIDs, id)
+						}
+					}
+				}
 			}
 		}
 
-		// Show logs from all services (follow mode)
-		// We'll use the first service directory and show logs for all containers
-		if len(serviceDirs) > 0 {
-			// Get all container names
-			var containerNames []string
-			for _, service := range services {
-				containerNames = append(containerNames, service)
+		// Show logs from all containers in parallel
+		if len(containerIDs) > 0 {
+			var wg sync.WaitGroup
+			for _, containerID := range containerIDs {
+				wg.Add(1)
+				go func(id string) {
+					defer wg.Done()
+					cmd := exec.Command("docker", "logs", "-f", "--tail", "50", id)
+					cmd.Stdout = os.Stdout
+					cmd.Stderr = os.Stderr
+					cmd.Run()
+				}(containerID)
 			}
-
-			// Use docker compose logs -f with container names
-			cmdArgs := []string{"logs", "-f"}
-			cmdArgs = append(cmdArgs, containerNames...)
-
-			cmd := exec.Command("docker", cmdArgs...)
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
-
-			if err := cmd.Run(); err != nil {
-				// Ignore error (user might have pressed Ctrl+C)
-				return nil
-			}
+			wg.Wait()
 		}
 	}
 
