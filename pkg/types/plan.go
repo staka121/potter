@@ -24,4 +24,5 @@ type ObjectInWave struct {
 	Contract     string   `json:"contract"`
 	Dependencies []string `json:"dependencies"`
 	Port         int      `json:"port"`
+	IsGateway    bool     `json:"is_gateway"` // True if this is an auto-generated gateway service
 }

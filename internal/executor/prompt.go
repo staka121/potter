@@ -21,6 +21,11 @@ func NewPromptGenerator(plan *types.ImplementationPlan) *PromptGenerator {
 
 // GeneratePrompt generates a complete implementation prompt for an object
 func (pg *PromptGenerator) GeneratePrompt(obj types.ObjectInWave) (string, error) {
+	// Special handling for gateway service
+	if obj.IsGateway {
+		return pg.generateGatewayPrompt(obj)
+	}
+
 	var prompt strings.Builder
 
 	// Header
@@ -166,6 +171,136 @@ func (pg *PromptGenerator) GenerateAllPrompts() (map[string]string, error) {
 	}
 
 	return prompts, nil
+}
+
+// generateGatewayPrompt generates a prompt for the auto-generated API Gateway
+func (pg *PromptGenerator) generateGatewayPrompt(obj types.ObjectInWave) (string, error) {
+	var prompt strings.Builder
+
+	// Header
+	prompt.WriteString(fmt.Sprintf("# Implementation Task: %s (API Gateway)\n\n", obj.Name))
+	prompt.WriteString("You are implementing an API Gateway for a Tsubo application.\n\n")
+
+	// Tsubo philosophy explanation
+	prompt.WriteString("## Tsubo Philosophy: Encapsulation\n\n")
+	prompt.WriteString("**壺（Tsubo）のカプセル化:**\n")
+	prompt.WriteString("- 壺（アプリケーション全体）は**単一のエントリーポイント**を持つべき\n")
+	prompt.WriteString("- 固体オブジェクト（各マイクロサービス）は**外部から直接アクセスできない**\n")
+	prompt.WriteString("- API Gatewayが**唯一の外部公開エンドポイント**となる\n")
+	prompt.WriteString("- 内部サービスは**内部ネットワークのみ**でアクセス可能\n\n")
+
+	// Collect all services and their routing info
+	prompt.WriteString("## Services to Route\n\n")
+	prompt.WriteString("This gateway must route requests to the following internal services:\n\n")
+
+	// Get all services from previous waves
+	allServices := pg.collectAllServices(obj)
+	for _, svc := range allServices {
+		prompt.WriteString(fmt.Sprintf("### %s\n", svc.Name))
+		prompt.WriteString(fmt.Sprintf("- Internal URL: `http://%s:%d`\n", svc.Name, svc.Port))
+
+		// Read contract to get API endpoints
+		if svc.Contract != "" {
+			contractContent, err := readFileContent(svc.Contract)
+			if err == nil {
+				prompt.WriteString("- Contract:\n```yaml\n")
+				prompt.WriteString(contractContent)
+				prompt.WriteString("\n```\n")
+			}
+		}
+		prompt.WriteString("\n")
+	}
+
+	// Implementation instructions
+	prompt.WriteString("## Implementation Requirements\n\n")
+	prompt.WriteString("**Your task:**\n")
+	prompt.WriteString("- Implement an API Gateway in Go (Go 1.22) that acts as a reverse proxy\n")
+	prompt.WriteString("- Create all necessary files in: " + filepath.Join(pg.plan.ImplementationsDir, obj.Name) + "\n")
+	prompt.WriteString(fmt.Sprintf("- **IMPORTANT: Gateway MUST listen on port %d** (single entry point)\n", obj.Port))
+	prompt.WriteString("- Required files:\n")
+	prompt.WriteString("  - Go source files (main.go, proxy logic, routing, etc.)\n")
+	prompt.WriteString("  - go.mod\n")
+	prompt.WriteString("  - Dockerfile (multi-stage build with golang:1.22-alpine)\n")
+	prompt.WriteString("  - docker-compose.yml\n")
+	prompt.WriteString("  - .dockerignore\n")
+	prompt.WriteString("  - README.md (gateway documentation)\n\n")
+
+	prompt.WriteString("**Routing Rules:**\n")
+	for _, svc := range allServices {
+		// Extract API base path from contract if available
+		basePath := "/api/v1"
+		prompt.WriteString(fmt.Sprintf("- Routes starting with `%s` → proxy to `http://%s:%d`\n",
+			basePath, svc.Name, svc.Port))
+	}
+	prompt.WriteString("\n")
+
+	prompt.WriteString("**Important principles:**\n")
+	prompt.WriteString("- Use Go's `httputil.ReverseProxy` for efficient proxying\n")
+	prompt.WriteString("- Forward all headers, query parameters, and request bodies\n")
+	prompt.WriteString("- Handle errors gracefully (service unavailable, timeouts)\n")
+	prompt.WriteString("- Add proper logging for debugging\n")
+	prompt.WriteString("- **CRITICAL**: Do NOT import unused packages (Go will fail to compile)\n")
+	prompt.WriteString("- Keep the implementation simple and focused on routing\n\n")
+
+	prompt.WriteString(fmt.Sprintf("**Port configuration:**\n"))
+	prompt.WriteString(fmt.Sprintf("- The gateway MUST listen on port %d (external facing)\n", obj.Port))
+	prompt.WriteString(fmt.Sprintf("- In Dockerfile, use EXPOSE %d\n", obj.Port))
+	prompt.WriteString(fmt.Sprintf("- In docker-compose.yml, map port %d:%d\n", obj.Port, obj.Port))
+	prompt.WriteString("- This is the ONLY externally accessible port\n\n")
+
+	prompt.WriteString("**Docker network configuration:**\n")
+	prompt.WriteString("- Use network name: tsubo-network\n")
+	prompt.WriteString("- In docker-compose.yml, declare the network as external:\n")
+	prompt.WriteString("  ```yaml\n")
+	prompt.WriteString("  networks:\n")
+	prompt.WriteString("    tsubo-network:\n")
+	prompt.WriteString("      external: true\n")
+	prompt.WriteString("  ```\n")
+	prompt.WriteString("- This allows the gateway to communicate with all internal services\n\n")
+
+	prompt.WriteString("**Docker Compose format:**\n")
+	prompt.WriteString("- DO NOT include 'version' field in docker-compose.yml (it's obsolete)\n")
+	prompt.WriteString("- Start directly with 'services:' at the top level\n\n")
+
+	serviceDir := filepath.Join(pg.plan.ImplementationsDir, obj.Name)
+	prompt.WriteString(fmt.Sprintf("**Output directory:** %s\n\n", serviceDir))
+
+	// Output format instructions
+	prompt.WriteString("## Output Format\n\n")
+	prompt.WriteString("**CRITICAL:** You MUST output each file using the following exact format:\n\n")
+	prompt.WriteString("```\n")
+	prompt.WriteString("<create_file>\n")
+	prompt.WriteString("<path>relative/path/to/file.go</path>\n")
+	prompt.WriteString("<content>\n")
+	prompt.WriteString("// File content here\n")
+	prompt.WriteString("</content>\n")
+	prompt.WriteString("</create_file>\n")
+	prompt.WriteString("```\n\n")
+	prompt.WriteString("**Important notes about file paths:**\n")
+	prompt.WriteString("- All paths should be relative to the service directory\n")
+	prompt.WriteString("- Example: `main.go` (for top-level files)\n")
+	prompt.WriteString("- Example: `proxy/handler.go` (for nested files)\n")
+	prompt.WriteString("- DO NOT include the full path\n\n")
+	prompt.WriteString("Start implementation now.\n")
+
+	return prompt.String(), nil
+}
+
+// collectAllServices collects all services except the gateway itself
+func (pg *PromptGenerator) collectAllServices(gateway types.ObjectInWave) []types.ObjectInWave {
+	var services []types.ObjectInWave
+
+	for _, wave := range pg.plan.Waves {
+		for _, obj := range wave.Objects {
+			// Skip the gateway itself
+			if obj.Name == gateway.Name {
+				continue
+			}
+			services = append(services, obj)
+		}
+	}
+
+	return services
 }
 
 // readFileContent reads and returns file content
