@@ -39,6 +39,11 @@ func (g *Generator) Generate(tsuboDef *types.TsuboDefinition) (*ManifestSet, err
 
 	// Generate manifests for each object (service)
 	for _, obj := range tsuboDef.Objects {
+		// Skip gateway-service if Ingress is enabled (gateway is replaced by Ingress)
+		if obj.Name == "gateway-service" && g.config.Ingress != nil && g.config.Ingress.Enabled {
+			continue
+		}
+
 		// Generate Deployment
 		deployment := GenerateDeployment(obj, g.config, tsuboName)
 		manifests.Deployments = append(manifests.Deployments, deployment)
@@ -46,6 +51,12 @@ func (g *Generator) Generate(tsuboDef *types.TsuboDefinition) (*ManifestSet, err
 		// Generate Service
 		service := GenerateService(obj, g.config, tsuboName)
 		manifests.Services = append(manifests.Services, service)
+	}
+
+	// Generate Ingress if enabled (replaces gateway-service)
+	if g.config.Ingress != nil && g.config.Ingress.Enabled {
+		ingress := GenerateIngress(tsuboDef, g.config, g.config.Ingress)
+		manifests.Ingress = ingress
 	}
 
 	// Write manifests to files
@@ -88,10 +99,22 @@ func (g *Generator) writeManifests(namespaceManifest string, manifests *Manifest
 		}
 	}
 
+	// Write ingress manifest if generated
+	if manifests.Ingress != "" {
+		ingressPath := filepath.Join(outputDir, "ingress.yaml")
+		if err := os.WriteFile(ingressPath, []byte(manifests.Ingress), 0644); err != nil {
+			return fmt.Errorf("failed to write ingress manifest: %w", err)
+		}
+	}
+
 	fmt.Printf("✅ Generated Kubernetes manifests in: %s\n", outputDir)
 	fmt.Printf("   - Namespace: %s\n", namespacePath)
 	fmt.Printf("   - Deployments: %d\n", len(manifests.Deployments))
 	fmt.Printf("   - Services: %d\n", len(manifests.Services))
+	if manifests.Ingress != "" {
+		ingressPath := filepath.Join(outputDir, "ingress.yaml")
+		fmt.Printf("   - Ingress: %s (replaces gateway-service)\n", ingressPath)
+	}
 
 	return nil
 }

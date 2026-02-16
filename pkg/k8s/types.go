@@ -2,11 +2,12 @@ package k8s
 
 // GeneratorConfig contains configuration for K8s manifest generation
 type GeneratorConfig struct {
-	Namespace      string
-	OutputDir      string
-	ImageRegistry  string
-	ImageTag       string
+	Namespace       string
+	OutputDir       string
+	ImageRegistry   string
+	ImageTag        string
 	DefaultReplicas int32
+	Ingress         *IngressConfig
 }
 
 // DefaultGeneratorConfig returns default configuration
@@ -17,6 +18,7 @@ func DefaultGeneratorConfig() *GeneratorConfig {
 		ImageRegistry:   "",
 		ImageTag:        "latest",
 		DefaultReplicas: 1,
+		Ingress:         DefaultIngressConfig(),
 	}
 }
 
@@ -26,4 +28,5 @@ type ManifestSet struct {
 	Deployments []string
 	Services    []string
 	ConfigMaps  []string
+	Ingress     string
 }

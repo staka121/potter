@@ -38,6 +38,9 @@ func runDeployGenerate(args []string) error {
 	registry := fs.String("registry", "", "Docker image registry (e.g., docker.io/myorg)")
 	imageTag := fs.String("tag", "latest", "Docker image tag")
 	replicas := fs.Int("replicas", 1, "Default number of replicas")
+	ingressEnabled := fs.Bool("ingress", true, "Enable Ingress generation (replaces gateway-service)")
+	ingressHost := fs.String("ingress-host", "", "Ingress host (e.g., todo.example.com)")
+	ingressClass := fs.String("ingress-class", "nginx", "Ingress class name")
 	helpFlag := fs.Bool("help", false, "Show help for deploy generate command")
 
 	if err := fs.Parse(args); err != nil {
@@ -78,12 +81,22 @@ func runDeployGenerate(args []string) error {
 	// Step 2: Generate Kubernetes manifests
 	fmt.Printf("%s[Step 2] Generating Kubernetes manifests%s\n", colorYellow, colorReset)
 
+	// Configure Ingress
+	ingressConfig := &k8s.IngressConfig{
+		Enabled:      *ingressEnabled,
+		Host:         *ingressHost,
+		TLSEnabled:   false,
+		IngressClass: *ingressClass,
+		Annotations:  make(map[string]string),
+	}
+
 	config := &k8s.GeneratorConfig{
 		Namespace:       *namespace,
 		OutputDir:       *outputDir,
 		ImageRegistry:   *registry,
 		ImageTag:        *imageTag,
 		DefaultReplicas: int32(*replicas),
+		Ingress:         ingressConfig,
 	}
 
 	generator := k8s.NewGenerator(config)
@@ -127,18 +140,22 @@ func printDeployGenerateUsage() {
 	fmt.Println("  potter deploy generate [options] <tsubo-file>")
 	fmt.Println()
 	fmt.Println("Options:")
-	fmt.Println("  --namespace string   Kubernetes namespace (default: default)")
-	fmt.Println("  --output string      Output directory for manifests (default: k8s)")
-	fmt.Println("  --registry string    Docker image registry (e.g., docker.io/myorg)")
-	fmt.Println("  --tag string         Docker image tag (default: latest)")
-	fmt.Println("  --replicas int       Default number of replicas (default: 1)")
-	fmt.Println("  --help               Show this help message")
+	fmt.Println("  --namespace string      Kubernetes namespace (default: default)")
+	fmt.Println("  --output string         Output directory for manifests (default: k8s)")
+	fmt.Println("  --registry string       Docker image registry (e.g., docker.io/myorg)")
+	fmt.Println("  --tag string            Docker image tag (default: latest)")
+	fmt.Println("  --replicas int          Default number of replicas (default: 1)")
+	fmt.Println("  --ingress               Enable Ingress generation (default: true)")
+	fmt.Println("  --ingress-host string   Ingress host (e.g., todo.example.com)")
+	fmt.Println("  --ingress-class string  Ingress class name (default: nginx)")
+	fmt.Println("  --help                  Show this help message")
 	fmt.Println()
 	fmt.Println("Examples:")
 	fmt.Println("  potter deploy generate app.tsubo.yaml")
 	fmt.Println("  potter deploy generate --namespace production app.tsubo.yaml")
 	fmt.Println("  potter deploy generate --registry gcr.io/myproject --tag v1.0.0 app.tsubo.yaml")
 	fmt.Println("  potter deploy generate --replicas 3 --output ./manifests app.tsubo.yaml")
+	fmt.Println("  potter deploy generate --ingress-host todo.example.com app.tsubo.yaml")
 	fmt.Println()
 }
 
