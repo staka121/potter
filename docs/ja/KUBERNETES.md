@@ -178,6 +178,26 @@ curl http://localhost:8080/api/v1/todos
 
 ### 3. Kubernetes にデプロイ
 
+**オプション A: potter deploy apply を使用（推奨）**
+
+```bash
+# マニフェストを生成
+potter deploy generate \
+  --namespace production \
+  --ingress-host api.example.com \
+  --registry docker.io/myorg \
+  --tag v1.0.0 \
+  app.tsubo.yaml
+
+# 自動ロールアウト監視付きでクラスタに適用
+potter deploy apply --namespace production
+
+# Ingress 経由でアクセス
+curl https://api.example.com/api/v1/users
+```
+
+**オプション B: kubectl を直接使用**
+
 ```bash
 # Ingress 付きの K8s マニフェストを生成
 potter deploy generate \
@@ -187,8 +207,11 @@ potter deploy generate \
   --tag v1.0.0 \
   app.tsubo.yaml
 
-# クラスタに適用
+# 手動でクラスタに適用
 kubectl apply -f k8s/
+
+# 手動でステータス確認
+kubectl get pods -n production
 
 # Ingress 経由でアクセス
 curl https://api.example.com/api/v1/users
@@ -198,17 +221,27 @@ curl https://api.example.com/api/v1/users
 
 ### 基本デプロイ
 
-デフォルト設定でマニフェストを生成：
+デフォルト設定で生成・デプロイ：
 
 ```bash
+# マニフェストを生成
 potter deploy generate app.tsubo.yaml
+
+# クラスタにデプロイ
+potter deploy apply
 ```
 
-生成されるもの:
+生成・デプロイされるもの:
 - Namespace
 - Deployments (各1レプリカ)
 - Services (ClusterIP)
 - Ingress (nginx, デフォルトホスト)
+
+`apply` コマンドは以下を実行：
+- kubectl の利用可能性チェック
+- 全マニフェストの適用
+- ロールアウト完了まで待機
+- デプロイステータスの表示
 
 ### 本番デプロイ
 

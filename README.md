@@ -388,6 +388,7 @@ potter run (Startup)
   - `potter run` - Service startup (Docker Compose)
   - `potter deploy` - Kubernetes deployment tools
     - `potter deploy generate` - Generate K8s manifests with Ingress
+    - `potter deploy apply` - Apply manifests to K8s cluster
 
 ## Contributing
 
