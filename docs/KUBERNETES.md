@@ -178,6 +178,26 @@ curl http://localhost:8080/api/v1/todos
 
 ### 3. Deploy to Kubernetes
 
+**Option A: Using potter deploy apply (Recommended)**
+
+```bash
+# Generate and apply in one workflow
+potter deploy generate \
+  --namespace production \
+  --ingress-host api.example.com \
+  --registry docker.io/myorg \
+  --tag v1.0.0 \
+  app.tsubo.yaml
+
+# Apply to cluster with automatic rollout monitoring
+potter deploy apply --namespace production
+
+# Access via Ingress
+curl https://api.example.com/api/v1/users
+```
+
+**Option B: Using kubectl directly**
+
 ```bash
 # Generate K8s manifests with Ingress
 potter deploy generate \
@@ -187,8 +207,11 @@ potter deploy generate \
   --tag v1.0.0 \
   app.tsubo.yaml
 
-# Apply to cluster
+# Apply to cluster manually
 kubectl apply -f k8s/
+
+# Check status manually
+kubectl get pods -n production
 
 # Access via Ingress
 curl https://api.example.com/api/v1/users
@@ -198,17 +221,27 @@ curl https://api.example.com/api/v1/users
 
 ### Basic Deployment
 
-Generate manifests with default settings:
+Generate and deploy with default settings:
 
 ```bash
+# Generate manifests
 potter deploy generate app.tsubo.yaml
+
+# Deploy to cluster
+potter deploy apply
 ```
 
-Generates:
+Generates and deploys:
 - Namespace
 - Deployments (1 replica each)
 - Services (ClusterIP)
 - Ingress (nginx, default host)
+
+The `apply` command will:
+- Check kubectl availability
+- Apply all manifests
+- Wait for rollout completion
+- Display deployment status
 
 ### Production Deployment
 

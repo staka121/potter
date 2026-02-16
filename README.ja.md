@@ -388,6 +388,7 @@ potter run (起動)
   - `potter run` - サービス起動（Docker Compose）
   - `potter deploy` - Kubernetes デプロイツール
     - `potter deploy generate` - Ingress 付き K8s マニフェスト生成
+    - `potter deploy apply` - K8s クラスタへマニフェストを適用
 
 ## コントリビューション
 
