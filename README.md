@@ -89,6 +89,13 @@ Automatically execute contract tests, type checking, and integration tests for q
 ### 🚀 Fast Development Cycle
 Implement microservices 3-5x faster than traditional methods.
 
+### 🔄 Contract-Driven Migration
+Detect contract changes and migrate only affected services — no full rebuild needed:
+- **`potter migrate plan`**: Show what changed and what will be rebuilt (dry run)
+- **`potter migrate apply`**: Apply changes with breaking-change warnings
+- **`potter migrate history`**: Audit trail of all contract changes
+- **`potter refactor`**: Regenerate services cleanly from current Contract (remove patchwork)
+
 ### ☸️ Multi-Environment Support (Docker Compose ⇄ Kubernetes)
 Single Tsubo definition deploys to both local development and production:
 - **Local**: Docker Compose + gateway-service (simple, fast)
@@ -225,6 +232,34 @@ potter verify ./poc/contracts/tsubo-todo-app.tsubo.yaml
 **Included Domains (Solid Objects):**
 - User Domain (user-service: port 8080)
 - TODO Domain (todo-service: port 8081)
+
+### Incremental Development (migrate & refactor)
+
+Once services are built, use `migrate` and `refactor` for ongoing development:
+
+```bash
+# Check what changed since last migration
+potter migrate plan ./poc/contracts/tsubo-todo-app.tsubo.yaml
+
+# Example output:
+# [+] notification-service (NEW)        → Will implement
+# [~] user-service (MODIFIED - BREAKING) → Endpoint removed
+# [*] Update infrastructure
+
+# Apply changes (prompts for confirmation if breaking)
+potter migrate apply ./poc/contracts/tsubo-todo-app.tsubo.yaml
+
+# View migration history
+potter migrate history ./poc/contracts/tsubo-todo-app.tsubo.yaml
+
+# Regenerate a single service cleanly from its current Contract
+potter refactor --service todo-service ./poc/contracts/tsubo-todo-app.tsubo.yaml
+
+# Regenerate all services (full clean slate from Contract)
+potter refactor ./poc/contracts/tsubo-todo-app.tsubo.yaml
+```
+
+**Why refactor?** Contract is the Single Source of Truth. When implementations accumulate patches and drift from the Contract, regenerating from scratch is the cleanest solution.
 
 ### Production Deployment (Kubernetes)
 
@@ -463,6 +498,8 @@ See [WHY_GO.md](./docs/WHY_GO.md) for details.
     - [x] `potter build` - Contract parsing, AI implementation, prompt generation
     - [x] `potter verify` - Contract verification, test execution
     - [x] `potter run` - Service startup (Docker Compose)
+    - [x] `potter migrate` - Contract change detection & incremental migration
+    - [x] `potter refactor` - Clean regeneration from current Contract
     - [x] Automatic dependency analysis (topological sort)
     - [x] Automatic Wave (execution order) determination (multi-wave support)
     - [x] Claude API client implementation
@@ -476,13 +513,20 @@ See [WHY_GO.md](./docs/WHY_GO.md) for details.
 ```
 Contract Definition (Human)
    ↓
-potter build (Auto-analysis + AI implementation) ← Fully automated!
+potter build (Auto-analysis + AI implementation) ← Full rebuild
    ↓
 Microservice Implementation (100% Contract compliant)
    ↓
 potter verify (Verification)
    ↓
 potter run (Startup)
+   ↓
+[Contract changes over time]
+   ↓
+potter migrate plan  → Detect changes (breaking / non-breaking)
+potter migrate apply → Rebuild only affected services ← Incremental!
+   or
+potter refactor      → Regenerate cleanly from Contract ← Clean slate!
 ```
 
 ### Next Milestones
@@ -492,7 +536,7 @@ potter run (Startup)
   - [ ] Implementation plan visualization
   - [x] Cycle detection (circular dependency detection)
   - [ ] Retry logic
-  - [ ] Partial re-execution
+  - [x] Partial re-execution (`potter migrate apply` / `potter refactor --service`)
   - [ ] Multiple model support
 - [ ] Verification engine implementation
   - [ ] Automate Contract compliance checking
@@ -521,12 +565,18 @@ potter run (Startup)
 ### CLI Commands
 - **potter** - Unified command-line interface
   - `potter new` - Service template generation
-  - `potter build` - Contract parsing, AI implementation
+  - `potter build` - Contract parsing, AI implementation (full rebuild)
   - `potter verify` - Contract verification, test execution
   - `potter run` - Service startup (Docker Compose)
   - `potter deploy` - Kubernetes deployment tools
     - `potter deploy generate` - Generate K8s manifests with Ingress
     - `potter deploy apply` - Apply manifests to K8s cluster
+  - `potter migrate` - Contract change detection and incremental migration
+    - `potter migrate plan` - Show pending changes (dry run)
+    - `potter migrate apply` - Apply changes (rebuilds only affected services)
+    - `potter migrate history` - Show migration audit trail
+  - `potter refactor` - Regenerate services cleanly from current Contract
+    - `--service <name>` - Refactor a single service
 
 ## Contributing
 
@@ -585,18 +635,23 @@ See [DEVELOPMENT_PRINCIPLES.md](./docs/DEVELOPMENT_PRINCIPLES.md) for details.
 
 ---
 
-**Status:** ✅ **Kubernetes Integration Complete**
+**Status:** ✅ **Contract-Driven Migration Complete**
 **Version:** 0.6.0
-**Latest Achievement:** Multi-environment deployment (Docker Compose ⇄ Kubernetes)
+**Latest Achievement:** `potter migrate` & `potter refactor` — incremental, Contract-driven development
 
 **Implemented:**
 - ✅ **potter CLI** - Unified command-line interface
   - `potter new` - Service template generation
-  - `potter build` - Contract parsing, AI implementation
+  - `potter build` - Contract parsing, AI implementation (full rebuild)
   - `potter verify` - Contract verification, test execution
   - `potter run` - Service startup (Docker Compose)
   - `potter deploy` - Kubernetes deployment
     - `potter deploy generate` - K8s manifest generation with Ingress
+  - `potter migrate` - Contract change detection & incremental migration
+    - `potter migrate plan` - Dry-run: show what changed and what will be rebuilt
+    - `potter migrate apply` - Apply: rebuild only affected services
+    - `potter migrate history` - Audit trail of all contract changes
+  - `potter refactor` - Regenerate services cleanly from current Contract
   - Concurrency control (`--concurrency`)
   - Multi-wave support via topological sort
   - Claude API integration
@@ -613,4 +668,4 @@ See [DEVELOPMENT_PRINCIPLES.md](./docs/DEVELOPMENT_PRINCIPLES.md) for details.
 - ✅ 100% Contract compliant
 - ✅ Complete integration tests
 
-**From local development to production deployment - all with a single Tsubo definition!** 🎉
+**Contract is the Single Source of Truth — Potter manages everything else.** 🎉
