@@ -66,6 +66,21 @@ func (r *Runner) GetTempDir() string {
 	return r.tempDir
 }
 
+// ExecuteSingle executes implementation for a specific named service
+func (r *Runner) ExecuteSingle(objectName string) (*ExecutionResult, error) {
+	for _, wave := range r.plan.Waves {
+		for _, obj := range wave.Objects {
+			if obj.Name == objectName {
+				var mu sync.Mutex
+				completedObjects := 0
+				result, err := r.executeObject(obj, &completedObjects, 1, &mu)
+				return &result, err
+			}
+		}
+	}
+	return nil, fmt.Errorf("object %s not found in implementation plan", objectName)
+}
+
 // ExecuteAll executes all waves in the implementation plan
 func (r *Runner) ExecuteAll() ([]ExecutionResult, error) {
 	var allResults []ExecutionResult

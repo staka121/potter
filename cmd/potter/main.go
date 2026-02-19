@@ -33,6 +33,10 @@ func run() error {
 		return runRun(os.Args[2:])
 	case "deploy":
 		return runDeploy(os.Args[2:])
+	case "migrate":
+		return runMigrate(os.Args[2:])
+	case "refactor":
+		return runRefactor(os.Args[2:])
 	case "version", "--version", "-v":
 		fmt.Printf("potter version %s\n", version)
 		return nil
@@ -58,6 +62,8 @@ func printUsage() {
 	fmt.Println("  verify <tsubo-file>        Verify contract compliance and run tests")
 	fmt.Println("  run [options] <tsubo-file> Start all services with docker-compose")
 	fmt.Println("  deploy <subcommand>        Kubernetes deployment tools")
+	fmt.Println("  migrate <subcommand>       Detect contract changes and migrate services")
+	fmt.Println("  refactor [options]         Regenerate services cleanly from current Contract")
 	fmt.Println("  version                    Show version information")
 	fmt.Println("  help                       Show this help message")
 	fmt.Println()
@@ -70,5 +76,9 @@ func printUsage() {
 	fmt.Println("  potter verify app.tsubo.yaml                 # Run contract verification")
 	fmt.Println("  potter run -d app.tsubo.yaml                 # Start all services in background")
 	fmt.Println("  potter deploy generate app.tsubo.yaml        # Generate Kubernetes manifests")
+	fmt.Println("  potter migrate plan app.tsubo.yaml           # Show pending contract changes")
+	fmt.Println("  potter migrate apply app.tsubo.yaml          # Apply contract changes")
+	fmt.Println("  potter refactor app.tsubo.yaml               # Regenerate all services cleanly")
+	fmt.Println("  potter refactor --service todo app.tsubo.yaml # Regenerate one service")
 	fmt.Println()
 }

@@ -15,6 +15,11 @@ func ParseObjectFile(filePath string) (*types.ObjectDefinition, error) {
 		return nil, fmt.Errorf("failed to read object file: %w", err)
 	}
 
+	return ParseObjectYAML(data)
+}
+
+// ParseObjectYAML parses object definition from raw YAML bytes
+func ParseObjectYAML(data []byte) (*types.ObjectDefinition, error) {
 	var object types.ObjectDefinition
 	if err := yaml.Unmarshal(data, &object); err != nil {
 		return nil, fmt.Errorf("failed to parse object YAML: %w", err)
