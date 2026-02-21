@@ -2,12 +2,13 @@ package types
 
 // ObjectDefinition represents a single object (domain/microservice) contract
 type ObjectDefinition struct {
-	Version    string              `yaml:"version"`
-	BelongsTo  string              `yaml:"belongs_to"`
-	Service    ServiceConfig       `yaml:"service"`
-	API        APIConfig           `yaml:"api"`
-	Types      map[string]TypeDef  `yaml:"types"`
+	Version      string             `yaml:"version"`
+	BelongsTo    string             `yaml:"belongs_to"`
+	Service      ServiceConfig      `yaml:"service"`
+	API          APIConfig          `yaml:"api"`
+	Types        map[string]TypeDef `yaml:"types"`
 	Dependencies DependenciesConfig `yaml:"dependencies"`
+	Performance  PerformanceConfig  `yaml:"performance"`
 }
 
 // ServiceConfig contains service metadata
@@ -47,6 +48,18 @@ type Endpoint struct {
 type TypeDef struct {
 	Description string                 `yaml:"description"`
 	Properties  map[string]interface{} `yaml:"properties"`
+}
+
+// PerformanceConfig defines SLA latency requirements
+type PerformanceConfig struct {
+	Latency LatencyConfig `yaml:"latency"`
+}
+
+// LatencyConfig defines p50/p95/p99 latency thresholds (e.g. "50ms", "200ms")
+type LatencyConfig struct {
+	P50 string `yaml:"p50"`
+	P95 string `yaml:"p95"`
+	P99 string `yaml:"p99"`
 }
 
 // DependenciesConfig defines service dependencies
