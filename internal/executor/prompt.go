@@ -6,7 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/staka121/potter/internal/parser"
 	"github.com/staka121/potter/pkg/types"
+	"gopkg.in/yaml.v3"
 )
 
 // PromptGenerator generates implementation prompts for AI agents
@@ -67,6 +69,38 @@ func (pg *PromptGenerator) GeneratePrompt(obj types.ObjectInWave) (string, error
 	prompt.WriteString("```yaml\n")
 	prompt.WriteString(contractContent)
 	prompt.WriteString("\n```\n\n")
+
+	// Inject architecture guidelines if specified in the contract
+	var objDef types.ObjectDefinition
+	if err := yaml.Unmarshal([]byte(contractContent), &objDef); err == nil && objDef.Service.Architecture != "" {
+		archPath := filepath.Join(filepath.Dir(obj.Contract), objDef.Service.Architecture)
+		archDef, err := parser.ParseArchitectureFile(archPath)
+		if err == nil {
+			prompt.WriteString("## Architecture Guidelines\n\n")
+			prompt.WriteString(fmt.Sprintf("This service MUST follow **%s**.\n\n", archDef.Architecture.Name))
+			if archDef.Architecture.Description != "" {
+				prompt.WriteString(archDef.Architecture.Description + "\n\n")
+			}
+			if len(archDef.Architecture.DirectoryStructure) > 0 {
+				prompt.WriteString("### Directory Structure:\n")
+				for _, entry := range archDef.Architecture.DirectoryStructure {
+					prompt.WriteString(fmt.Sprintf("- `%s` - %s\n", entry.Path, entry.Description))
+				}
+				prompt.WriteString("\n")
+			}
+			if len(archDef.Architecture.Rules) > 0 {
+				prompt.WriteString("### Rules:\n")
+				for i, rule := range archDef.Architecture.Rules {
+					prompt.WriteString(fmt.Sprintf("%d. %s\n", i+1, rule))
+				}
+				prompt.WriteString("\n")
+			}
+			if archDef.Architecture.Notes != "" {
+				prompt.WriteString("### Additional Notes:\n")
+				prompt.WriteString(archDef.Architecture.Notes + "\n\n")
+			}
+		}
+	}
 
 	// Step 3: Understand dependencies
 	if len(obj.Dependencies) > 0 {

@@ -12,9 +12,10 @@ type ObjectDefinition struct {
 
 // ServiceConfig contains service metadata
 type ServiceConfig struct {
-	Name        string          `yaml:"name"`
-	Description string          `yaml:"description"`
-	Context     ServiceContext  `yaml:"context"`
+	Name         string         `yaml:"name"`
+	Description  string         `yaml:"description"`
+	Architecture string         `yaml:"architecture"`
+	Context      ServiceContext `yaml:"context"`
 }
 
 // ServiceContext defines the business context
