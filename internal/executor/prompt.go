@@ -6,7 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/staka121/potter/internal/parser"
 	"github.com/staka121/potter/pkg/types"
+	"gopkg.in/yaml.v3"
 )
 
 // PromptGenerator generates implementation prompts for AI agents
@@ -67,6 +69,24 @@ func (pg *PromptGenerator) GeneratePrompt(obj types.ObjectInWave) (string, error
 	prompt.WriteString("```yaml\n")
 	prompt.WriteString(contractContent)
 	prompt.WriteString("\n```\n\n")
+
+	// If an architecture is specified, write CLAUDE.md to the service directory
+	// and instruct the AI to read it before implementing.
+	var objDef types.ObjectDefinition
+	if err := yaml.Unmarshal([]byte(contractContent), &objDef); err == nil && objDef.Service.Architecture != "" {
+		archPath := filepath.Join(filepath.Dir(obj.Contract), objDef.Service.Architecture)
+		archDef, err := parser.ParseArchitectureFile(archPath)
+		if err == nil {
+			serviceDir := filepath.Join(pg.plan.ImplementationsDir, obj.Name)
+			if writeErr := writeCLAUDEMD(serviceDir, archDef); writeErr == nil {
+				claudeMDPath := filepath.Join(serviceDir, "CLAUDE.md")
+				prompt.WriteString("## Architecture Guidelines\n\n")
+				prompt.WriteString(fmt.Sprintf("An architecture definition file has been created at `%s`.\n\n", claudeMDPath))
+				prompt.WriteString("**IMPORTANT: Read `CLAUDE.md` in your service directory BEFORE writing any code.**\n\n")
+				prompt.WriteString(fmt.Sprintf("This service MUST follow the **%s** architecture as defined there.\n\n", archDef.Architecture.Name))
+			}
+		}
+	}
 
 	// Step 3: Understand dependencies
 	if len(obj.Dependencies) > 0 {
@@ -301,6 +321,48 @@ func (pg *PromptGenerator) collectAllServices(gateway types.ObjectInWave) []type
 	}
 
 	return services
+}
+
+// writeCLAUDEMD creates a CLAUDE.md file in the service directory from an architecture definition.
+// The file persists in the implementation directory and is automatically picked up by Claude Code
+// sessions, making the architecture guidelines available to both AI and human developers.
+func writeCLAUDEMD(serviceDir string, archDef *types.ArchitectureDefinition) error {
+	if err := os.MkdirAll(serviceDir, 0755); err != nil {
+		return err
+	}
+
+	var content strings.Builder
+	content.WriteString(fmt.Sprintf("# Architecture: %s\n\n", archDef.Architecture.Name))
+
+	if archDef.Architecture.Description != "" {
+		content.WriteString(archDef.Architecture.Description)
+		content.WriteString("\n")
+	}
+
+	if len(archDef.Architecture.DirectoryStructure) > 0 {
+		content.WriteString("## Directory Structure\n\n")
+		for _, entry := range archDef.Architecture.DirectoryStructure {
+			content.WriteString(fmt.Sprintf("- `%s` — %s\n", entry.Path, entry.Description))
+		}
+		content.WriteString("\n")
+	}
+
+	if len(archDef.Architecture.Rules) > 0 {
+		content.WriteString("## Rules\n\n")
+		for i, rule := range archDef.Architecture.Rules {
+			content.WriteString(fmt.Sprintf("%d. %s\n", i+1, rule))
+		}
+		content.WriteString("\n")
+	}
+
+	if archDef.Architecture.Notes != "" {
+		content.WriteString("## Additional Notes\n\n")
+		content.WriteString(archDef.Architecture.Notes)
+		content.WriteString("\n")
+	}
+
+	claudeMDPath := filepath.Join(serviceDir, "CLAUDE.md")
+	return os.WriteFile(claudeMDPath, []byte(content.String()), 0644)
 }
 
 // readFileContent reads and returns file content

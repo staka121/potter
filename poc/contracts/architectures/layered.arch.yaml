@@ -1,0 +1,36 @@
+version: "1.0"
+architecture:
+  name: "layered-architecture"
+  description: |
+    Traditional N-tier Layered Architecture.
+    Organizes code into horizontal layers where each layer serves a specific role.
+    Simpler than Clean Architecture; suitable for straightforward CRUD services.
+
+  directory_structure:
+    - path: "handler/"
+      description: "HTTP request handlers and routing. Parses requests and writes responses."
+    - path: "service/"
+      description: "Business logic layer. Orchestrates operations between handlers and repositories."
+    - path: "repository/"
+      description: "Data access layer. All database or storage operations go here."
+    - path: "model/"
+      description: "Data structures and DTOs shared across layers."
+
+  rules:
+    - "handler/ calls service/ only — never repository/ directly"
+    - "service/ calls repository/ for data access"
+    - "repository/ handles all storage concerns"
+    - "model/ types may be used by any layer but contain no logic"
+    - "No circular dependencies between layers"
+
+  notes: |
+    This architecture is ideal for simple microservices with clear CRUD semantics.
+
+    Naming conventions:
+    - Handlers: handler/<Entity>Handler.go (e.g., handler/user.go)
+    - Services: service/<Entity>Service.go (e.g., service/user.go)
+    - Repositories: repository/<Entity>Repository.go (e.g., repository/user.go)
+    - Models: model/<Entity>.go (e.g., model/user.go)
+
+    Keep each file focused on a single entity or concern.
+    Avoid putting multiple unrelated types in one file.

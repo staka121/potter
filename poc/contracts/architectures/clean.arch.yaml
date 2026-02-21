@@ -1,0 +1,37 @@
+version: "1.0"
+architecture:
+  name: "clean-architecture"
+  description: |
+    Clean Architecture by Robert C. Martin.
+    Organizes code into concentric layers with strict dependency rules.
+    Inner layers define interfaces; outer layers provide implementations.
+
+  directory_structure:
+    - path: "domain/"
+      description: "Business entities, value objects, and domain interfaces. No external dependencies."
+    - path: "usecase/"
+      description: "Application business rules and use case interactors. Depends only on domain."
+    - path: "adapter/"
+      description: "HTTP handlers, repository implementations, presenters. Adapts between use cases and infrastructure."
+    - path: "infrastructure/"
+      description: "Frameworks, databases, external services, and configuration. Outermost layer."
+
+  rules:
+    - "Dependencies only point inward (infrastructure → adapter → usecase → domain)"
+    - "Inner layers must not import outer layers"
+    - "Domain layer has zero external dependencies"
+    - "Use case layer defines repository interfaces; adapter layer implements them"
+    - "HTTP handlers live in adapter layer, not in main.go"
+    - "Business logic must not leak into adapter or infrastructure layers"
+
+  notes: |
+    Naming conventions:
+    - Domain entities: domain/<Entity>.go (e.g., domain/user.go)
+    - Use case interfaces: usecase/<UseCase>Usecase.go (e.g., usecase/create_user.go)
+    - Repository interfaces: defined in usecase/ or domain/
+    - Repository implementations: adapter/repository/<Entity>Repository.go
+    - HTTP handlers: adapter/handler/<Entity>Handler.go
+    - Dependency injection: wire everything together in main.go or infrastructure/
+
+    The domain layer should contain only pure Go structs and interfaces with no imports
+    from external packages or other internal layers.

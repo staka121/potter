@@ -12,6 +12,7 @@ belongs_to: tsubo-todo-app
 service:
   name: user-service
   description: ユーザー管理サービス（簡易認証機能付き）
+  architecture: "./architectures/clean.arch.yaml"
 
   # ビジネスコンテキスト
   context:
