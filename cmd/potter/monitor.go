@@ -74,10 +74,42 @@ func runMonitorGenerate(args []string) error {
 	fmt.Printf("  Objects: %d\n", len(tsuboDef.Objects))
 	fmt.Println()
 
-	// Step 2: Generate monitoring manifests
-	fmt.Printf("%s[Step 2] Generating monitoring manifests%s\n", colorYellow, colorReset)
+	// Step 2: Load contracts and build monitor targets
+	fmt.Printf("%s[Step 2] Loading contracts%s\n", colorYellow, colorReset)
 
-	outputDir := filepath.Join(filepath.Dir(tsuboFile), "monitor")
+	tsuboDir := filepath.Dir(tsuboFile)
+	targets := make([]k8s.MonitorTarget, 0, len(tsuboDef.Objects))
+
+	for _, obj := range tsuboDef.Objects {
+		target := k8s.MonitorTarget{Object: obj}
+
+		if obj.Contract != "" {
+			contractPath := filepath.Join(tsuboDir, obj.Contract)
+			objDef, err := parser.ParseObjectFile(contractPath)
+			if err != nil {
+				fmt.Printf("  %s⚠ %s: contract not found, skipping SLA rules%s\n", colorYellow, obj.Name, colorReset)
+			} else if objDef.Performance.Latency.P50 != "" || objDef.Performance.Latency.P95 != "" || objDef.Performance.Latency.P99 != "" {
+				target.Performance = &objDef.Performance
+				fmt.Printf("  %s✓ %s: SLA defined (p50=%s p95=%s p99=%s)%s\n",
+					colorGreen, obj.Name,
+					objDef.Performance.Latency.P50,
+					objDef.Performance.Latency.P95,
+					objDef.Performance.Latency.P99,
+					colorReset,
+				)
+			} else {
+				fmt.Printf("  - %s: no performance SLA defined\n", obj.Name)
+			}
+		}
+
+		targets = append(targets, target)
+	}
+	fmt.Println()
+
+	// Step 3: Generate monitoring manifests
+	fmt.Printf("%s[Step 3] Generating monitoring manifests%s\n", colorYellow, colorReset)
+
+	outputDir := filepath.Join(tsuboDir, "monitor")
 	config := &k8s.MonitorConfig{
 		Namespace: *namespace,
 		OutputDir: outputDir,
@@ -85,7 +117,7 @@ func runMonitorGenerate(args []string) error {
 	}
 
 	generator := k8s.NewMonitorGenerator(config)
-	manifests, err := generator.Generate(tsuboDef)
+	manifests, err := generator.Generate(targets)
 	if err != nil {
 		return fmt.Errorf("failed to generate manifests: %w", err)
 	}
