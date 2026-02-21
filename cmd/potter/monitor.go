@@ -92,6 +92,8 @@ func runMonitorGenerate(args []string) error {
 
 	fmt.Println()
 	fmt.Printf("%s✅ Monitoring manifests generated successfully!%s\n", colorGreen, colorReset)
+	fmt.Printf("   - ServiceMonitors: %d\n", len(manifests.ServiceMonitors))
+	fmt.Printf("   - PrometheusRules: %d\n", len(manifests.PrometheusRules))
 	fmt.Println()
 	fmt.Println("Next steps:")
 	fmt.Printf("  1. Review manifests in: %s\n", outputDir)
