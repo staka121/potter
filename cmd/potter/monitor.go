@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/staka121/potter/internal/parser"
 	"github.com/staka121/potter/pkg/k8s"
@@ -175,8 +176,16 @@ func runMonitorApply(args []string) error {
 	fmt.Printf("  %s✓ kubectl is available%s\n", colorGreen, colorReset)
 	fmt.Println()
 
-	// Step 2: Check manifest directory
-	fmt.Printf("%s[Step 2] Checking manifest directory%s\n", colorYellow, colorReset)
+	// Step 2: Check Prometheus Operator CRDs
+	fmt.Printf("%s[Step 2] Checking Prometheus Operator%s\n", colorYellow, colorReset)
+	if err := checkPrometheusOperator(); err != nil {
+		return err
+	}
+	fmt.Printf("  %s✓ Prometheus Operator CRDs found%s\n", colorGreen, colorReset)
+	fmt.Println()
+
+	// Step 3: Check manifest directory
+	fmt.Printf("%s[Step 3] Checking manifest directory%s\n", colorYellow, colorReset)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		return fmt.Errorf("manifest directory not found: %s\nRun 'potter monitor generate' first", dir)
 	}
@@ -192,22 +201,87 @@ func runMonitorApply(args []string) error {
 	fmt.Printf("  %sFound %d manifest file(s)%s\n", colorGreen, len(manifestFiles), colorReset)
 	fmt.Println()
 
-	// Step 3: Apply manifests
-	fmt.Printf("%s[Step 3] Applying monitoring manifests to cluster%s\n", colorYellow, colorReset)
+	// Step 4: Apply manifests
+	fmt.Printf("%s[Step 4] Applying monitoring manifests to cluster%s\n", colorYellow, colorReset)
 
-	cmd := exec.Command("kubectl", "apply", "-f", dir)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	applyCmd := exec.Command("kubectl", "apply", "-f", dir)
+	applyCmd.Stdout = os.Stdout
+	applyCmd.Stderr = os.Stderr
 
-	if err := cmd.Run(); err != nil {
+	if err := applyCmd.Run(); err != nil {
 		return fmt.Errorf("failed to apply manifests: %w", err)
 	}
+	fmt.Println()
+
+	// Step 5: Show status
+	fmt.Printf("%s[Step 5] Applied resources%s\n", colorYellow, colorReset)
+	showMonitorStatus(dir)
 
 	fmt.Println()
 	fmt.Printf("%s✅ Monitoring manifests applied successfully!%s\n", colorGreen, colorReset)
 	fmt.Println()
 
 	return nil
+}
+
+// checkPrometheusOperator verifies that the required Prometheus Operator CRDs are installed.
+func checkPrometheusOperator() error {
+	crds := []string{
+		"servicemonitors.monitoring.coreos.com",
+		"prometheusrules.monitoring.coreos.com",
+	}
+	for _, crd := range crds {
+		if err := exec.Command("kubectl", "get", "crd", crd).Run(); err != nil {
+			return fmt.Errorf(
+				"Prometheus Operator CRD not found: %s\n"+
+					"  Please install Prometheus Operator first:\n"+
+					"  https://prometheus-operator.dev/docs/getting-started/installation/",
+				crd,
+			)
+		}
+	}
+	return nil
+}
+
+// showMonitorStatus lists ServiceMonitors and PrometheusRules in the manifest directory's namespace.
+func showMonitorStatus(manifestDir string) {
+	// Detect namespace from manifest files
+	ns := detectNamespaceFromDir(manifestDir)
+
+	fmt.Printf("  ServiceMonitors (namespace: %s):\n", ns)
+	smCmd := exec.Command("kubectl", "get", "servicemonitors", "-n", ns)
+	smCmd.Stdout = os.Stdout
+	smCmd.Stderr = os.Stderr
+	smCmd.Run()
+
+	fmt.Println()
+	fmt.Printf("  PrometheusRules (namespace: %s):\n", ns)
+	prCmd := exec.Command("kubectl", "get", "prometheusrules", "-n", ns)
+	prCmd.Stdout = os.Stdout
+	prCmd.Stderr = os.Stderr
+	prCmd.Run()
+}
+
+// detectNamespaceFromDir extracts the namespace from the first YAML file in the directory.
+func detectNamespaceFromDir(dir string) string {
+	files, err := filepath.Glob(filepath.Join(dir, "*.yaml"))
+	if err != nil || len(files) == 0 {
+		return "default"
+	}
+	data, err := os.ReadFile(files[0])
+	if err != nil {
+		return "default"
+	}
+	for _, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "namespace:") {
+			parts := strings.SplitN(line, ":", 2)
+			if len(parts) == 2 {
+				return strings.TrimSpace(parts[1])
+			}
+		}
+	}
+	return "default"
 }
 
 func printMonitorUsage() {
