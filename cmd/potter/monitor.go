@@ -1,15 +1,21 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/staka121/potter/internal/parser"
+	"github.com/staka121/potter/pkg/dashboard"
 	"github.com/staka121/potter/pkg/k8s"
+	prometheusclient "github.com/staka121/potter/pkg/prometheus"
 )
 
 func runMonitor(args []string) error {
@@ -25,6 +31,8 @@ func runMonitor(args []string) error {
 		return runMonitorGenerate(args[1:])
 	case "apply":
 		return runMonitorApply(args[1:])
+	case "dashboard":
+		return runMonitorDashboard(args[1:])
 	case "help", "--help", "-h":
 		printMonitorUsage()
 		return nil
@@ -291,13 +299,15 @@ func printMonitorUsage() {
 	fmt.Println("  potter monitor <subcommand> [options]")
 	fmt.Println()
 	fmt.Println("Subcommands:")
-	fmt.Println("  generate   Generate ServiceMonitor / PrometheusRule manifests from Contract")
-	fmt.Println("  apply      Apply monitoring manifests to Kubernetes cluster")
-	fmt.Println("  help       Show this help message")
+	fmt.Println("  generate    Generate ServiceMonitor / PrometheusRule manifests from Contract")
+	fmt.Println("  apply       Apply monitoring manifests to Kubernetes cluster")
+	fmt.Println("  dashboard   Real-time SLA dashboard via Prometheus API")
+	fmt.Println("  help        Show this help message")
 	fmt.Println()
 	fmt.Println("Examples:")
 	fmt.Println("  potter monitor generate app.tsubo.yaml")
 	fmt.Println("  potter monitor apply app.tsubo.yaml")
+	fmt.Println("  potter monitor dashboard app.tsubo.yaml")
 	fmt.Println()
 }
 
@@ -348,5 +358,122 @@ func printMonitorApplyHeader() {
 	fmt.Println("═══════════════════════════════════════════════════════════")
 	fmt.Println("  Potter Monitor - Apply to Kubernetes")
 	fmt.Println("═══════════════════════════════════════════════════════════")
+	fmt.Println()
+}
+
+func runMonitorDashboard(args []string) error {
+	fs := flag.NewFlagSet("monitor dashboard", flag.ExitOnError)
+
+	prometheusEndpoint := fs.String("prometheus", "http://localhost:9090", "Prometheus API endpoint")
+	interval := fs.Duration("interval", 5*time.Second, "Dashboard refresh interval")
+	helpFlag := fs.Bool("help", false, "Show help for monitor dashboard command")
+
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+
+	if *helpFlag {
+		printMonitorDashboardUsage()
+		return nil
+	}
+
+	args = fs.Args()
+	if len(args) == 0 {
+		return fmt.Errorf("tsubo file path required. Usage: potter monitor dashboard <tsubo-file> [options]")
+	}
+
+	tsuboFile := args[0]
+	if _, err := os.Stat(tsuboFile); os.IsNotExist(err) {
+		return fmt.Errorf("tsubo file not found: %s", tsuboFile)
+	}
+
+	// Parse tsubo and load contracts to build MonitorTargets
+	tsuboDef, err := parser.ParseTsuboFile(tsuboFile)
+	if err != nil {
+		return fmt.Errorf("failed to parse tsubo file: %w", err)
+	}
+
+	tsuboDir := filepath.Dir(tsuboFile)
+	targets := make([]k8s.MonitorTarget, 0, len(tsuboDef.Objects))
+	for _, obj := range tsuboDef.Objects {
+		target := k8s.MonitorTarget{Object: obj}
+		if obj.Contract != "" {
+			contractPath := filepath.Join(tsuboDir, obj.Contract)
+			if objDef, err := parser.ParseObjectFile(contractPath); err == nil {
+				if objDef.Performance.Latency.P50 != "" || objDef.Performance.Latency.P95 != "" || objDef.Performance.Latency.P99 != "" {
+					target.Performance = &objDef.Performance
+				}
+			}
+		}
+		targets = append(targets, target)
+	}
+
+	client := prometheusclient.NewClient(*prometheusEndpoint)
+
+	// Handle Ctrl+C gracefully
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	fmt.Printf("Starting dashboard (press Ctrl+C to exit)...\n")
+	time.Sleep(500 * time.Millisecond)
+
+	ticker := time.NewTicker(*interval)
+	defer ticker.Stop()
+
+	// Initial render
+	render(tsuboDef.Tsubo.Name, *prometheusEndpoint, targets, client)
+
+	for {
+		select {
+		case <-ctx.Done():
+			fmt.Println("\nExiting dashboard.")
+			return nil
+		case <-ticker.C:
+			render(tsuboDef.Tsubo.Name, *prometheusEndpoint, targets, client)
+		}
+	}
+}
+
+// render fetches metrics for all targets and draws the dashboard.
+func render(tsuboName, prometheusEndpoint string, targets []k8s.MonitorTarget, client *prometheusclient.Client) {
+	rows := make([]dashboard.Row, 0, len(targets))
+	for _, t := range targets {
+		p50, p95, p99, err := client.QueryLatency(t.Object.Name)
+		row := dashboard.Row{
+			ServiceName: t.Object.Name,
+			P50Ms:       p50,
+			P95Ms:       p95,
+			P99Ms:       p99,
+		}
+		if err != nil {
+			row.P50Ms, row.P95Ms, row.P99Ms = -1, -1, -1
+		}
+		if t.Performance != nil {
+			row.SLA = &t.Performance.Latency
+		}
+		rows = append(rows, row)
+	}
+	dashboard.Render(tsuboName, prometheusEndpoint, rows, time.Now())
+}
+
+func printMonitorDashboardUsage() {
+	fmt.Println("Potter Monitor Dashboard - Real-time SLA Dashboard")
+	fmt.Println()
+	fmt.Println("Usage:")
+	fmt.Println("  potter monitor dashboard [options] <tsubo-file>")
+	fmt.Println()
+	fmt.Println("Options:")
+	fmt.Println("  --prometheus string   Prometheus API endpoint (default: http://localhost:9090)")
+	fmt.Println("  --interval duration   Refresh interval (default: 5s)")
+	fmt.Println("  --help                Show this help message")
+	fmt.Println()
+	fmt.Println("Examples:")
+	fmt.Println("  potter monitor dashboard app.tsubo.yaml")
+	fmt.Println("  potter monitor dashboard --prometheus http://prometheus.example.com app.tsubo.yaml")
+	fmt.Println("  potter monitor dashboard --interval 10s app.tsubo.yaml")
+	fmt.Println()
+	fmt.Println("Tip (Kubernetes):")
+	fmt.Println("  kubectl port-forward svc/prometheus 9090:9090 -n monitoring")
+	fmt.Println("  potter monitor dashboard app.tsubo.yaml")
 	fmt.Println()
 }
